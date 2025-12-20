@@ -30,11 +30,11 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
 
     if (isSettingPassword) {
       if (password.length < 4) {
-        setError('Password must be at least 4 characters');
+        setError('Lozinka mora imati najmanje 4 znaka');
         return;
       }
       if (password !== confirmPassword) {
-        setError('Passwords do not match');
+        setError('Lozinke se ne podudaraju');
         return;
       }
       await storage.setPassword(password);
@@ -44,7 +44,7 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
       if (password === storedPassword) {
         onAuthenticate();
       } else {
-        setError('Incorrect password');
+        setError('Netačna lozinka');
         setPassword('');
       }
     }
@@ -65,9 +65,9 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
           >
             <Heart className="w-16 h-16 text-primary-400 mx-auto" fill="currentColor" />
           </motion.div>
-          <h1 className="font-serif text-3xl text-primary-600 mt-4">For Lejla</h1>
+          <h1 className="font-serif text-3xl text-primary-600 mt-4">Lejla & Hamza ❤️</h1>
           <p className="text-primary-400 mt-2">
-            {isSettingPassword ? 'Set a password to protect your memories' : 'Enter password to continue'}
+            {isSettingPassword ? 'Postavi lozinku za zaštitu uspomena' : 'Unesi lozinku za nastavak'}
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isSettingPassword ? 'Create password' : 'Password'}
+              placeholder={isSettingPassword ? 'Kreiraj lozinku' : 'Lozinka'}
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white/50"
               autoFocus
             />
@@ -91,7 +91,7 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
+                placeholder="Potvrdi lozinku"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white/50"
               />
             </div>
@@ -111,7 +111,7 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
             type="submit"
             className="w-full py-3 bg-gradient-to-r from-primary-400 to-secondary-400 text-white rounded-xl font-medium hover:from-primary-500 hover:to-secondary-500 transition-all shadow-lg shadow-primary-200"
           >
-            {isSettingPassword ? 'Set Password' : 'Enter'}
+            {isSettingPassword ? 'Postavi lozinku' : 'Uđi'}
           </button>
         </form>
       </motion.div>

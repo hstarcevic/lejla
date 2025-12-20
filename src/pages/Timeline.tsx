@@ -74,14 +74,14 @@ export default function Timeline() {
       exit={{ opacity: 0 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-serif text-xl text-primary-600">Our Story</h2>
+        <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-1 text-sm bg-primary-100 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add
+            Dodaj
           </button>
         )}
       </div>
@@ -94,7 +94,7 @@ export default function Timeline() {
           className="bg-white rounded-xl p-4 shadow-lg shadow-primary-100 mb-6 space-y-3"
         >
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Date</label>
+            <label className="block text-sm text-gray-600 mb-1">Datum</label>
             <input
               type="date"
               value={formData.date}
@@ -104,32 +104,32 @@ export default function Timeline() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Title</label>
+            <label className="block text-sm text-gray-600 mb-1">Naslov</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-              placeholder="First date, First kiss..."
+              placeholder="Prvi dejt, Prvi poljubac..."
               className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Description</label>
+            <label className="block text-sm text-gray-600 mb-1">Opis</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Tell the story..."
+              placeholder="Ispričaj priču..."
               rows={3}
               className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none resize-none"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Photo</label>
+            <label className="block text-sm text-gray-600 mb-1">Slika</label>
             <label className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed border-primary-300 cursor-pointer hover:bg-primary-50 transition-colors">
               <Image className="w-5 h-5 text-primary-400" />
               <span className="text-sm text-primary-500">
-                {formData.photo ? 'Change photo' : 'Upload photo'}
+                {formData.photo ? 'Promijeni sliku' : 'Dodaj sliku'}
               </span>
               <input
                 type="file"
@@ -167,13 +167,13 @@ export default function Timeline() {
       {isLoading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
-          <p className="text-primary-300 mt-3">Loading memories...</p>
+          <p className="text-primary-300 mt-3">Učitavanje uspomena...</p>
         </div>
       ) : entries.length === 0 ? (
         <div className="text-center py-12 text-primary-300">
           <Calendar className="w-12 h-12 mx-auto mb-3" />
-          <p>No memories yet</p>
-          <p className="text-sm">Add your first milestone</p>
+          <p>Još nema uspomena</p>
+          <p className="text-sm">Dodaj prvu uspomenu</p>
         </div>
       ) : (
         <div className="relative">

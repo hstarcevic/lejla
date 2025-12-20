@@ -9,9 +9,9 @@ interface NavigationProps {
 
 export default function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const items = [
-    { id: 'timeline' as Page, icon: Clock, label: 'Timeline' },
-    { id: 'letters' as Page, icon: Mail, label: 'Letters' },
-    { id: 'garden' as Page, icon: Flower2, label: 'Garden' },
+    { id: 'timeline' as Page, icon: Clock, label: 'Naša priča' },
+    { id: 'letters' as Page, icon: Mail, label: 'Pisma' },
+    { id: 'garden' as Page, icon: Flower2, label: 'Bašta' },
   ];
 
   return (

@@ -68,14 +68,14 @@ export default function Garden() {
       exit={{ opacity: 0 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-serif text-xl text-primary-600">Love Garden</h2>
+        <h2 className="font-serif text-xl text-primary-600">Bašta ljubavi</h2>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-1 text-sm bg-primary-100 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Plant
+            Posadi
           </button>
         )}
       </div>
@@ -88,7 +88,7 @@ export default function Garden() {
           className="bg-white rounded-xl p-4 shadow-lg shadow-primary-100 mb-6 space-y-3"
         >
           <div>
-            <label className="block text-sm text-gray-600 mb-2">Flower Type</label>
+            <label className="block text-sm text-gray-600 mb-2">Vrsta cvijeta</label>
             <div className="flex gap-2 justify-center">
               {(Object.keys(flowerEmojis) as Flower['type'][]).map((type) => (
                 <button
@@ -107,11 +107,11 @@ export default function Garden() {
             </div>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Message</label>
+            <label className="block text-sm text-gray-600 mb-1">Poruka</label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData((prev) => ({ ...prev, message: e.target.value }))}
-              placeholder="A reason I love you..."
+              placeholder="Razlog zašto te volim..."
               rows={3}
               className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none resize-none"
               required
@@ -138,13 +138,13 @@ export default function Garden() {
       {isLoading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
-          <p className="text-primary-300 mt-3">Loading garden...</p>
+          <p className="text-primary-300 mt-3">Učitavanje bašte...</p>
         </div>
       ) : flowers.length === 0 ? (
         <div className="text-center py-12 text-primary-300">
           <Flower2 className="w-12 h-12 mx-auto mb-3" />
-          <p>Garden is empty</p>
-          <p className="text-sm">Plant your first flower</p>
+          <p>Bašta je prazna</p>
+          <p className="text-sm">Posadi prvi cvijet</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3">
@@ -203,13 +203,13 @@ export default function Garden() {
                   onClick={() => handleDelete(selectedFlower.id)}
                   className="flex-1 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
-                  Delete
+                  Obriši
                 </button>
                 <button
                   onClick={() => setSelectedFlower(null)}
                   className="flex-1 py-2 text-sm bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
                 >
-                  Close
+                  Zatvori
                 </button>
               </div>
             </motion.div>

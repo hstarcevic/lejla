@@ -52,7 +52,7 @@ function App() {
     <div className="min-h-screen pb-20">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-primary-100 px-4 py-3">
         <h1 className="text-center font-serif text-2xl text-primary-600">
-          For Lejla
+          Lejla & Hamza ❤️
         </h1>
       </header>
 
