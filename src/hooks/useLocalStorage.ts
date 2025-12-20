@@ -18,8 +18,18 @@ export function useTimeline() {
   };
 
   const addEntry = async (entry: TimelineEntry) => {
-    await storage.addTimelineEntry(entry);
-    await loadEntries();
+    // Optimistic update
+    setEntries(prev => [...prev, entry].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    ));
+
+    try {
+      await storage.addTimelineEntry(entry);
+      await loadEntries(); // Refresh from server
+    } catch (error) {
+      console.error('Failed to add entry:', error);
+      await loadEntries(); // Revert on error
+    }
   };
 
   const updateEntry = async (entry: TimelineEntry) => {
@@ -51,8 +61,16 @@ export function useLetters() {
   };
 
   const addLetter = async (letter: Letter) => {
-    await storage.addLetter(letter);
-    await loadLetters();
+    // Optimistic update
+    setLetters(prev => [letter, ...prev]);
+
+    try {
+      await storage.addLetter(letter);
+      await loadLetters(); // Refresh from server
+    } catch (error) {
+      console.error('Failed to add letter:', error);
+      await loadLetters(); // Revert on error
+    }
   };
 
   const updateLetter = async (letter: Letter) => {
@@ -84,8 +102,16 @@ export function useFlowers() {
   };
 
   const addFlower = async (flower: Flower) => {
-    await storage.addFlower(flower);
-    await loadFlowers();
+    // Optimistic update
+    setFlowers(prev => [...prev, flower]);
+
+    try {
+      await storage.addFlower(flower);
+      await loadFlowers(); // Refresh from server
+    } catch (error) {
+      console.error('Failed to add flower:', error);
+      await loadFlowers(); // Revert on error
+    }
   };
 
   const updateFlower = async (flower: Flower) => {

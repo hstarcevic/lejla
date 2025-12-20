@@ -9,7 +9,9 @@
       "Bash(/mnt/c/nvm4w/nodejs/npx.cmd create-vite@latest . --template react-ts --force)",
       "Bash(cmd.exe /c \"npx create-vite@latest . --template react-ts --force\")",
       "Bash(npm install:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
