@@ -12,10 +12,11 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "@supabase/supabase-js": "^2.89.0",
     "framer-motion": "^11.11.0",
-    "lucide-react": "^0.454.0"
+    "lucide-react": "^0.454.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

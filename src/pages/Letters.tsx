@@ -6,7 +6,7 @@ import { useLetters } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 
 export default function Letters() {
-  const { letters, setLetters } = useLetters();
+  const { letters, isLoading, addLetter, updateLetter, deleteLetter } = useLetters();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [formData, setFormData] = useState({ title: '', content: '' });
@@ -16,7 +16,7 @@ export default function Letters() {
     setIsAdding(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content) return;
 
@@ -27,22 +27,20 @@ export default function Letters() {
       isOpened: false,
       createdAt: new Date().toISOString(),
     };
-    setLetters([...letters, newLetter]);
+    await addLetter(newLetter);
     resetForm();
   };
 
-  const handleOpen = (letter: Letter) => {
+  const handleOpen = async (letter: Letter) => {
     if (!letter.isOpened) {
-      setLetters(
-        letters.map((l) => (l.id === letter.id ? { ...l, isOpened: true } : l))
-      );
+      await updateLetter({ ...letter, isOpened: true });
     }
     setSelectedLetter(letter);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setLetters(letters.filter((l) => l.id !== id));
+    await deleteLetter(id);
   };
 
   return (
@@ -111,7 +109,12 @@ export default function Letters() {
         </motion.form>
       )}
 
-      {letters.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
+          <p className="text-primary-300 mt-3">Loading letters...</p>
+        </div>
+      ) : letters.length === 0 ? (
         <div className="text-center py-12 text-primary-300">
           <Mail className="w-12 h-12 mx-auto mb-3" />
           <p>No letters yet</p>

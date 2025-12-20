@@ -22,7 +22,7 @@ const flowerColors = {
 };
 
 export default function Garden() {
-  const { flowers, setFlowers } = useFlowers();
+  const { flowers, isLoading, addFlower, updateFlower, deleteFlower } = useFlowers();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedFlower, setSelectedFlower] = useState<Flower | null>(null);
   const [formData, setFormData] = useState({
@@ -35,7 +35,7 @@ export default function Garden() {
     setIsAdding(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.message) return;
 
@@ -45,21 +45,19 @@ export default function Garden() {
       isBloomed: false,
       type: formData.type,
     };
-    setFlowers([...flowers, newFlower]);
+    await addFlower(newFlower);
     resetForm();
   };
 
-  const handleBloom = (flower: Flower) => {
+  const handleBloom = async (flower: Flower) => {
     if (!flower.isBloomed) {
-      setFlowers(
-        flowers.map((f) => (f.id === flower.id ? { ...f, isBloomed: true } : f))
-      );
+      await updateFlower({ ...flower, isBloomed: true });
     }
     setSelectedFlower(flower);
   };
 
-  const handleDelete = (id: string) => {
-    setFlowers(flowers.filter((f) => f.id !== id));
+  const handleDelete = async (id: string) => {
+    await deleteFlower(id);
     setSelectedFlower(null);
   };
 
@@ -137,7 +135,12 @@ export default function Garden() {
         </motion.form>
       )}
 
-      {flowers.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
+          <p className="text-primary-300 mt-3">Loading garden...</p>
+        </div>
+      ) : flowers.length === 0 ? (
         <div className="text-center py-12 text-primary-300">
           <Flower2 className="w-12 h-12 mx-auto mb-3" />
           <p>Garden is empty</p>

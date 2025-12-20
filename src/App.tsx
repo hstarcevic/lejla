@@ -14,15 +14,18 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if already authenticated
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
     const authenticated = storage.isAuthenticated();
-    const hasPassword = storage.getPassword();
+    const hasPassword = await storage.getPassword();
 
     if (authenticated && hasPassword) {
       setIsAuthenticated(true);
     }
     setIsLoading(false);
-  }, []);
+  };
 
   const handleAuthenticate = () => {
     setIsAuthenticated(true);

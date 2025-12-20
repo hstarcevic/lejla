@@ -14,13 +14,17 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
-    const storedPassword = storage.getPassword();
+    checkPassword();
+  }, []);
+
+  const checkPassword = async () => {
+    const storedPassword = await storage.getPassword();
     if (!storedPassword) {
       setIsSettingPassword(true);
     }
-  }, []);
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -33,10 +37,10 @@ export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
         setError('Passwords do not match');
         return;
       }
-      storage.setPassword(password);
+      await storage.setPassword(password);
       onAuthenticate();
     } else {
-      const storedPassword = storage.getPassword();
+      const storedPassword = await storage.getPassword();
       if (password === storedPassword) {
         onAuthenticate();
       } else {

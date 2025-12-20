@@ -4,48 +4,99 @@ import { storage } from '../utils/storage';
 
 export function useTimeline() {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setEntries(storage.getTimeline());
+    loadEntries();
   }, []);
 
-  const updateEntries = (newEntries: TimelineEntry[]) => {
-    const sorted = [...newEntries].sort((a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    setEntries(sorted);
-    storage.setTimeline(sorted);
+  const loadEntries = async () => {
+    setIsLoading(true);
+    const data = await storage.getTimeline();
+    setEntries(data);
+    setIsLoading(false);
   };
 
-  return { entries, setEntries: updateEntries };
+  const addEntry = async (entry: TimelineEntry) => {
+    await storage.addTimelineEntry(entry);
+    await loadEntries();
+  };
+
+  const updateEntry = async (entry: TimelineEntry) => {
+    await storage.updateTimelineEntry(entry);
+    await loadEntries();
+  };
+
+  const deleteEntry = async (id: string) => {
+    await storage.deleteTimelineEntry(id);
+    await loadEntries();
+  };
+
+  return { entries, isLoading, addEntry, updateEntry, deleteEntry, refresh: loadEntries };
 }
 
 export function useLetters() {
   const [letters, setLetters] = useState<Letter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setLetters(storage.getLetters());
+    loadLetters();
   }, []);
 
-  const updateLetters = (newLetters: Letter[]) => {
-    setLetters(newLetters);
-    storage.setLetters(newLetters);
+  const loadLetters = async () => {
+    setIsLoading(true);
+    const data = await storage.getLetters();
+    setLetters(data);
+    setIsLoading(false);
   };
 
-  return { letters, setLetters: updateLetters };
+  const addLetter = async (letter: Letter) => {
+    await storage.addLetter(letter);
+    await loadLetters();
+  };
+
+  const updateLetter = async (letter: Letter) => {
+    await storage.updateLetter(letter);
+    await loadLetters();
+  };
+
+  const deleteLetter = async (id: string) => {
+    await storage.deleteLetter(id);
+    await loadLetters();
+  };
+
+  return { letters, isLoading, addLetter, updateLetter, deleteLetter, refresh: loadLetters };
 }
 
 export function useFlowers() {
   const [flowers, setFlowers] = useState<Flower[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setFlowers(storage.getFlowers());
+    loadFlowers();
   }, []);
 
-  const updateFlowers = (newFlowers: Flower[]) => {
-    setFlowers(newFlowers);
-    storage.setFlowers(newFlowers);
+  const loadFlowers = async () => {
+    setIsLoading(true);
+    const data = await storage.getFlowers();
+    setFlowers(data);
+    setIsLoading(false);
   };
 
-  return { flowers, setFlowers: updateFlowers };
+  const addFlower = async (flower: Flower) => {
+    await storage.addFlower(flower);
+    await loadFlowers();
+  };
+
+  const updateFlower = async (flower: Flower) => {
+    await storage.updateFlower(flower);
+    await loadFlowers();
+  };
+
+  const deleteFlower = async (id: string) => {
+    await storage.deleteFlower(id);
+    await loadFlowers();
+  };
+
+  return { flowers, isLoading, addFlower, updateFlower, deleteFlower, refresh: loadFlowers };
 }

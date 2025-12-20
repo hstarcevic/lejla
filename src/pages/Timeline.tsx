@@ -6,7 +6,7 @@ import { useTimeline } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 
 export default function Timeline() {
-  const { entries, setEntries } = useTimeline();
+  const { entries, isLoading, addEntry, updateEntry, deleteEntry } = useTimeline();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -33,22 +33,21 @@ export default function Timeline() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.date || !formData.title) return;
 
     if (editingId) {
-      setEntries(
-        entries.map((entry) =>
-          entry.id === editingId ? { ...entry, ...formData } : entry
-        )
-      );
+      await updateEntry({
+        id: editingId,
+        ...formData,
+      });
     } else {
       const newEntry: TimelineEntry = {
         id: generateId(),
         ...formData,
       };
-      setEntries([...entries, newEntry]);
+      await addEntry(newEntry);
     }
     resetForm();
   };
@@ -64,8 +63,8 @@ export default function Timeline() {
     setIsAdding(true);
   };
 
-  const handleDelete = (id: string) => {
-    setEntries(entries.filter((entry) => entry.id !== id));
+  const handleDelete = async (id: string) => {
+    await deleteEntry(id);
   };
 
   return (
@@ -165,7 +164,12 @@ export default function Timeline() {
         </motion.form>
       )}
 
-      {entries.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
+          <p className="text-primary-300 mt-3">Loading memories...</p>
+        </div>
+      ) : entries.length === 0 ? (
         <div className="text-center py-12 text-primary-300">
           <Calendar className="w-12 h-12 mx-auto mb-3" />
           <p>No memories yet</p>
