@@ -94,7 +94,7 @@ function TimelineCard({ entry, index, onEdit, onDelete }: {
 }
 
 export default function Timeline() {
-  const { entries, isLoading, addEntry, updateEntry, deleteEntry } = useTimeline();
+  const { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry } = useTimeline();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -162,7 +162,10 @@ export default function Timeline() {
       exit={{ opacity: 0 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
+          {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
+        </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}

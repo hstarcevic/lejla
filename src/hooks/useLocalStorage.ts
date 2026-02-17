@@ -3,18 +3,22 @@ import { TimelineEntry, Letter, Flower } from '../types';
 import { storage } from '../utils/storage';
 
 export function useTimeline() {
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [entries, setEntries] = useState<TimelineEntry[]>(() => storage.getCachedTimeline() || []);
+  const [isLoading, setIsLoading] = useState(() => !storage.getCachedTimeline());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadEntries();
   }, []);
 
   const loadEntries = async () => {
-    setIsLoading(true);
+    const hasCache = entries.length > 0;
+    if (!hasCache) setIsLoading(true);
+    if (hasCache) setIsSyncing(true);
     const data = await storage.getTimeline();
     setEntries(data);
     setIsLoading(false);
+    setIsSyncing(false);
   };
 
   const addEntry = async (entry: TimelineEntry) => {
@@ -52,22 +56,26 @@ export function useTimeline() {
     }
   };
 
-  return { entries, isLoading, addEntry, updateEntry, deleteEntry, refresh: loadEntries };
+  return { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, refresh: loadEntries };
 }
 
 export function useLetters() {
-  const [letters, setLetters] = useState<Letter[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [letters, setLetters] = useState<Letter[]>(() => storage.getCachedLetters() || []);
+  const [isLoading, setIsLoading] = useState(() => !storage.getCachedLetters());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadLetters();
   }, []);
 
   const loadLetters = async () => {
-    setIsLoading(true);
+    const hasCache = letters.length > 0;
+    if (!hasCache) setIsLoading(true);
+    if (hasCache) setIsSyncing(true);
     const data = await storage.getLetters();
     setLetters(data);
     setIsLoading(false);
+    setIsSyncing(false);
   };
 
   const addLetter = async (letter: Letter) => {
@@ -103,22 +111,26 @@ export function useLetters() {
     }
   };
 
-  return { letters, isLoading, addLetter, updateLetter, deleteLetter, refresh: loadLetters };
+  return { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter, refresh: loadLetters };
 }
 
 export function useFlowers() {
-  const [flowers, setFlowers] = useState<Flower[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [flowers, setFlowers] = useState<Flower[]>(() => storage.getCachedFlowers() || []);
+  const [isLoading, setIsLoading] = useState(() => !storage.getCachedFlowers());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadFlowers();
   }, []);
 
   const loadFlowers = async () => {
-    setIsLoading(true);
+    const hasCache = flowers.length > 0;
+    if (!hasCache) setIsLoading(true);
+    if (hasCache) setIsSyncing(true);
     const data = await storage.getFlowers();
     setFlowers(data);
     setIsLoading(false);
+    setIsSyncing(false);
   };
 
   const addFlower = async (flower: Flower) => {
@@ -154,5 +166,5 @@ export function useFlowers() {
     }
   };
 
-  return { flowers, isLoading, addFlower, updateFlower, deleteFlower, refresh: loadFlowers };
+  return { flowers, isLoading, isSyncing, addFlower, updateFlower, deleteFlower, refresh: loadFlowers };
 }

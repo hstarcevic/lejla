@@ -6,7 +6,7 @@ import { useLetters } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 
 export default function Letters() {
-  const { letters, isLoading, addLetter, updateLetter, deleteLetter } = useLetters();
+  const { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter } = useLetters();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [formData, setFormData] = useState({ title: '', content: '' });
@@ -50,7 +50,10 @@ export default function Letters() {
       exit={{ opacity: 0 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-serif text-xl text-primary-600">Ljubavna pisma</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-serif text-xl text-primary-600">Ljubavna pisma</h2>
+          {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
+        </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}

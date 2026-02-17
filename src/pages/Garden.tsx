@@ -22,7 +22,7 @@ const flowerColors = {
 };
 
 export default function Garden() {
-  const { flowers, isLoading, addFlower, updateFlower, deleteFlower } = useFlowers();
+  const { flowers, isLoading, isSyncing, addFlower, updateFlower, deleteFlower } = useFlowers();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedFlower, setSelectedFlower] = useState<Flower | null>(null);
   const [formData, setFormData] = useState({
@@ -68,7 +68,10 @@ export default function Garden() {
       exit={{ opacity: 0 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="font-serif text-xl text-primary-600">Bašta ljubavi</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-serif text-xl text-primary-600">Bašta ljubavi</h2>
+          {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
+        </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
