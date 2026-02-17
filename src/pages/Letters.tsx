@@ -127,7 +127,7 @@ export default function Letters() {
               key={letter.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: Math.min(index * 0.05, 0.3) }}
               onClick={() => handleOpen(letter)}
               className="relative bg-white rounded-xl p-4 shadow-md shadow-primary-50 cursor-pointer hover:shadow-lg transition-shadow"
             >

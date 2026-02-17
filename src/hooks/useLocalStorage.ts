@@ -18,28 +18,38 @@ export function useTimeline() {
   };
 
   const addEntry = async (entry: TimelineEntry) => {
-    // Optimistic update
     setEntries(prev => [...prev, entry].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     ));
 
     try {
       await storage.addTimelineEntry(entry);
-      await loadEntries(); // Refresh from server
     } catch (error) {
       console.error('Failed to add entry:', error);
-      await loadEntries(); // Revert on error
+      await loadEntries();
     }
   };
 
   const updateEntry = async (entry: TimelineEntry) => {
-    await storage.updateTimelineEntry(entry);
-    await loadEntries();
+    setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
+
+    try {
+      await storage.updateTimelineEntry(entry);
+    } catch (error) {
+      console.error('Failed to update entry:', error);
+      await loadEntries();
+    }
   };
 
   const deleteEntry = async (id: string) => {
-    await storage.deleteTimelineEntry(id);
-    await loadEntries();
+    setEntries(prev => prev.filter(e => e.id !== id));
+
+    try {
+      await storage.deleteTimelineEntry(id);
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+      await loadEntries();
+    }
   };
 
   return { entries, isLoading, addEntry, updateEntry, deleteEntry, refresh: loadEntries };
@@ -61,26 +71,36 @@ export function useLetters() {
   };
 
   const addLetter = async (letter: Letter) => {
-    // Optimistic update
     setLetters(prev => [letter, ...prev]);
 
     try {
       await storage.addLetter(letter);
-      await loadLetters(); // Refresh from server
     } catch (error) {
       console.error('Failed to add letter:', error);
-      await loadLetters(); // Revert on error
+      await loadLetters();
     }
   };
 
   const updateLetter = async (letter: Letter) => {
-    await storage.updateLetter(letter);
-    await loadLetters();
+    setLetters(prev => prev.map(l => l.id === letter.id ? letter : l));
+
+    try {
+      await storage.updateLetter(letter);
+    } catch (error) {
+      console.error('Failed to update letter:', error);
+      await loadLetters();
+    }
   };
 
   const deleteLetter = async (id: string) => {
-    await storage.deleteLetter(id);
-    await loadLetters();
+    setLetters(prev => prev.filter(l => l.id !== id));
+
+    try {
+      await storage.deleteLetter(id);
+    } catch (error) {
+      console.error('Failed to delete letter:', error);
+      await loadLetters();
+    }
   };
 
   return { letters, isLoading, addLetter, updateLetter, deleteLetter, refresh: loadLetters };
@@ -102,26 +122,36 @@ export function useFlowers() {
   };
 
   const addFlower = async (flower: Flower) => {
-    // Optimistic update
     setFlowers(prev => [...prev, flower]);
 
     try {
       await storage.addFlower(flower);
-      await loadFlowers(); // Refresh from server
     } catch (error) {
       console.error('Failed to add flower:', error);
-      await loadFlowers(); // Revert on error
+      await loadFlowers();
     }
   };
 
   const updateFlower = async (flower: Flower) => {
-    await storage.updateFlower(flower);
-    await loadFlowers();
+    setFlowers(prev => prev.map(f => f.id === flower.id ? flower : f));
+
+    try {
+      await storage.updateFlower(flower);
+    } catch (error) {
+      console.error('Failed to update flower:', error);
+      await loadFlowers();
+    }
   };
 
   const deleteFlower = async (id: string) => {
-    await storage.deleteFlower(id);
-    await loadFlowers();
+    setFlowers(prev => prev.filter(f => f.id !== id));
+
+    try {
+      await storage.deleteFlower(id);
+    } catch (error) {
+      console.error('Failed to delete flower:', error);
+      await loadFlowers();
+    }
   };
 
   return { flowers, isLoading, addFlower, updateFlower, deleteFlower, refresh: loadFlowers };

@@ -1,9 +1,97 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Calendar, Trash2, Edit2, X, Check, Image } from 'lucide-react';
 import { TimelineEntry } from '../types';
 import { useTimeline } from '../hooks/useLocalStorage';
-import { generateId } from '../utils/storage';
+import { generateId, storage } from '../utils/storage';
+
+function TimelineCard({ entry, index, onEdit, onDelete }: {
+  entry: TimelineEntry;
+  index: number;
+  onEdit: (entry: TimelineEntry) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [photo, setPhoto] = useState<string | undefined>(entry.photo);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!entry.hasPhoto || entry.photo) return;
+
+    const observer = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          observer.disconnect();
+          setPhotoLoading(true);
+          storage.getTimelineEntryPhoto(entry.id).then((p) => {
+            setPhoto(p);
+            setPhotoLoading(false);
+          });
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [entry.id, entry.hasPhoto, entry.photo]);
+
+  const staggerDelay = Math.min(index * 0.1, 0.5);
+
+  return (
+    <motion.div
+      ref={cardRef}
+      key={entry.id}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: staggerDelay }}
+      className="relative pl-10"
+    >
+      <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-400 border-2 border-white shadow" />
+      <div className="bg-white rounded-xl p-4 shadow-md shadow-primary-50">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <p className="text-xs text-primary-400">
+              {new Date(entry.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+            <h3 className="font-serif text-lg text-primary-600">{entry.title}</h3>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => onEdit(entry)}
+              className="p-1.5 text-gray-400 hover:text-primary-500 transition-colors"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(entry.id)}
+              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        {photoLoading && (
+          <div className="w-full h-48 rounded-lg mb-2 bg-primary-50 animate-pulse" />
+        )}
+        {photo && (
+          <img
+            src={photo}
+            alt={entry.title}
+            className="w-full h-48 object-cover rounded-lg mb-2"
+          />
+        )}
+        {entry.description && (
+          <p className="text-sm text-gray-600 leading-relaxed">{entry.description}</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Timeline() {
   const { entries, isLoading, addEntry, updateEntry, deleteEntry } = useTimeline();
@@ -182,55 +270,13 @@ export default function Timeline() {
 
           <div className="space-y-6">
             {entries.map((entry, index) => (
-              <motion.div
+              <TimelineCard
                 key={entry.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="relative pl-10"
-              >
-                {/* Timeline dot */}
-                <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-400 border-2 border-white shadow" />
-
-                <div className="bg-white rounded-xl p-4 shadow-md shadow-primary-50">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-xs text-primary-400">
-                        {new Date(entry.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                      <h3 className="font-serif text-lg text-primary-600">{entry.title}</h3>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEdit(entry)}
-                        className="p-1.5 text-gray-400 hover:text-primary-500 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  {entry.photo && (
-                    <img
-                      src={entry.photo}
-                      alt={entry.title}
-                      className="w-full h-48 object-cover rounded-lg mb-2"
-                    />
-                  )}
-                  {entry.description && (
-                    <p className="text-sm text-gray-600 leading-relaxed">{entry.description}</p>
-                  )}
-                </div>
-              </motion.div>
+                entry={entry}
+                index={index}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </div>

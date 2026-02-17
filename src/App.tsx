@@ -10,6 +10,7 @@ import Garden from './pages/Garden';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasExistingPassword, setHasExistingPassword] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('timeline');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,11 +20,12 @@ function App() {
 
   const checkAuth = async () => {
     const authenticated = storage.isAuthenticated();
-    const hasPassword = await storage.getPassword();
+    const password = await storage.getPassword();
 
-    if (authenticated && hasPassword) {
+    if (authenticated && password) {
       setIsAuthenticated(true);
     }
+    setHasExistingPassword(!!password);
     setIsLoading(false);
   };
 
@@ -45,7 +47,7 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    return <PasswordGate onAuthenticate={handleAuthenticate} />;
+    return <PasswordGate onAuthenticate={handleAuthenticate} hasExistingPassword={hasExistingPassword} />;
   }
 
   return (

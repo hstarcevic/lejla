@@ -153,7 +153,7 @@ export default function Garden() {
               key={flower.id}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05, type: 'spring' }}
+              transition={{ delay: Math.min(index * 0.05, 0.3), type: 'spring' }}
               onClick={() => handleBloom(flower)}
               className="aspect-square flex items-center justify-center cursor-pointer"
             >

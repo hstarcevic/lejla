@@ -1,28 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Lock } from 'lucide-react';
 import { storage } from '../utils/storage';
 
 interface PasswordGateProps {
   onAuthenticate: () => void;
+  hasExistingPassword: boolean;
 }
 
-export default function PasswordGate({ onAuthenticate }: PasswordGateProps) {
+export default function PasswordGate({ onAuthenticate, hasExistingPassword }: PasswordGateProps) {
   const [password, setPassword] = useState('');
-  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const isSettingPassword = !hasExistingPassword;
   const [error, setError] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  useEffect(() => {
-    checkPassword();
-  }, []);
-
-  const checkPassword = async () => {
-    const storedPassword = await storage.getPassword();
-    if (!storedPassword) {
-      setIsSettingPassword(true);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

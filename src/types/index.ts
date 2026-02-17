@@ -4,6 +4,7 @@ export interface TimelineEntry {
   title: string;
   description: string;
   photo?: string;
+  hasPhoto?: boolean;
 }
 
 export interface Letter {

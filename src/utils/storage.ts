@@ -9,7 +9,7 @@ export const storage = {
   getTimeline: async (): Promise<TimelineEntry[]> => {
     const { data, error } = await supabase
       .from('timeline_entries')
-      .select('*')
+      .select('id, date, title, description')
       .order('date', { ascending: true });
 
     if (error) {
@@ -17,13 +17,32 @@ export const storage = {
       return [];
     }
 
+    // Also check which entries have photos (without fetching the actual data)
+    const { data: photoData } = await supabase
+      .from('timeline_entries')
+      .select('id')
+      .not('photo', 'is', null);
+
+    const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
+
     return (data || []).map((entry) => ({
       id: entry.id,
       date: entry.date,
       title: entry.title,
       description: entry.description,
-      photo: entry.photo || undefined,
+      hasPhoto: idsWithPhotos.has(entry.id),
     }));
+  },
+
+  getTimelineEntryPhoto: async (id: string): Promise<string | undefined> => {
+    const { data, error } = await supabase
+      .from('timeline_entries')
+      .select('photo')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return undefined;
+    return data.photo || undefined;
   },
 
   setTimeline: async (entries: TimelineEntry[]): Promise<void> => {
