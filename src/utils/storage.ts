@@ -1,11 +1,78 @@
 import { supabase } from '../lib/supabase';
 import { TimelineEntry, Letter, Flower } from '../types';
+import { logger } from './logger';
 
 // Keep auth in localStorage since it's session-specific
 const AUTH_KEY = 'lejla_authenticated';
 
+// Local cache keys
+const CACHE_TIMELINE = 'lejla_cache_timeline';
+const CACHE_LETTERS = 'lejla_cache_letters';
+const CACHE_FLOWERS = 'lejla_cache_flowers';
+
+function getCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function setCache<T>(key: string, data: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // localStorage full or unavailable — ignore
+  }
+}
+
+// IndexedDB photo cache (much larger storage than localStorage)
+const PHOTO_DB_NAME = 'lejla_photos';
+const PHOTO_STORE = 'photos';
+
+function openPhotoDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(PHOTO_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(PHOTO_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getCachedPhoto(id: string): Promise<string | undefined> {
+  try {
+    const db = await openPhotoDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(PHOTO_STORE, 'readonly');
+      const req = tx.objectStore(PHOTO_STORE).get(id);
+      req.onsuccess = () => resolve(req.result || undefined);
+      req.onerror = () => resolve(undefined);
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+async function setCachedPhoto(id: string, photo: string): Promise<void> {
+  try {
+    const db = await openPhotoDB();
+    const tx = db.transaction(PHOTO_STORE, 'readwrite');
+    tx.objectStore(PHOTO_STORE).put(photo, id);
+  } catch {
+    // ignore cache failures
+  }
+}
+
 export const storage = {
   // Timeline - now using Supabase
+  getCachedTimeline: (): TimelineEntry[] | null => {
+    return getCache<TimelineEntry[]>(CACHE_TIMELINE);
+  },
+
   getTimeline: async (): Promise<TimelineEntry[]> => {
     const { data, error } = await supabase
       .from('timeline_entries')
@@ -13,8 +80,8 @@ export const storage = {
       .order('date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching timeline:', error);
-      return [];
+      logger.error('timeline.fetch', 'Failed to fetch timeline', { error: error.message, code: error.code });
+      return getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
     }
 
     // Also check which entries have photos (without fetching the actual data)
@@ -25,16 +92,23 @@ export const storage = {
 
     const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
 
-    return (data || []).map((entry) => ({
+    const entries = (data || []).map((entry) => ({
       id: entry.id,
       date: entry.date,
       title: entry.title,
       description: entry.description,
       hasPhoto: idsWithPhotos.has(entry.id),
     }));
+
+    setCache(CACHE_TIMELINE, entries);
+    return entries;
   },
 
   getTimelineEntryPhoto: async (id: string): Promise<string | undefined> => {
+    // Check IndexedDB cache first
+    const cached = await getCachedPhoto(id);
+    if (cached) return cached;
+
     const { data, error } = await supabase
       .from('timeline_entries')
       .select('photo')
@@ -42,7 +116,13 @@ export const storage = {
       .single();
 
     if (error || !data) return undefined;
-    return data.photo || undefined;
+    const photo = data.photo || undefined;
+
+    if (photo) {
+      setCachedPhoto(id, photo);
+    }
+
+    return photo;
   },
 
   setTimeline: async (entries: TimelineEntry[]): Promise<void> => {
@@ -62,12 +142,14 @@ export const storage = {
       );
 
       if (error) {
-        console.error('Error saving timeline:', error);
+        logger.error('timeline.set', 'Failed to save timeline', { error: error.message, code: error.code });
       }
     }
   },
 
   addTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
+    logger.info('timeline.add', 'Adding timeline entry', { id: entry.id, title: entry.title, hasPhoto: !!entry.photo });
+
     const { error } = await supabase.from('timeline_entries').insert({
       id: entry.id,
       date: entry.date,
@@ -77,11 +159,13 @@ export const storage = {
     });
 
     if (error) {
-      console.error('Error adding timeline entry:', error);
+      logger.error('timeline.add', 'Failed to add timeline entry', { id: entry.id, error: error.message, code: error.code });
     }
   },
 
   updateTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
+    logger.info('timeline.update', 'Updating timeline entry', { id: entry.id, title: entry.title });
+
     const { error } = await supabase
       .from('timeline_entries')
       .update({
@@ -93,19 +177,25 @@ export const storage = {
       .eq('id', entry.id);
 
     if (error) {
-      console.error('Error updating timeline entry:', error);
+      logger.error('timeline.update', 'Failed to update timeline entry', { id: entry.id, error: error.message, code: error.code });
     }
   },
 
   deleteTimelineEntry: async (id: string): Promise<void> => {
+    logger.info('timeline.delete', 'Deleting timeline entry', { id });
+
     const { error } = await supabase.from('timeline_entries').delete().eq('id', id);
 
     if (error) {
-      console.error('Error deleting timeline entry:', error);
+      logger.error('timeline.delete', 'Failed to delete timeline entry', { id, error: error.message, code: error.code });
     }
   },
 
   // Letters - now using Supabase
+  getCachedLetters: (): Letter[] | null => {
+    return getCache<Letter[]>(CACHE_LETTERS);
+  },
+
   getLetters: async (): Promise<Letter[]> => {
     const { data, error } = await supabase
       .from('letters')
@@ -113,17 +203,20 @@ export const storage = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching letters:', error);
-      return [];
+      logger.error('letters.fetch', 'Failed to fetch letters', { error: error.message, code: error.code });
+      return getCache<Letter[]>(CACHE_LETTERS) || [];
     }
 
-    return (data || []).map((letter) => ({
+    const letters = (data || []).map((letter) => ({
       id: letter.id,
       title: letter.title,
       content: letter.content,
       isOpened: letter.is_opened,
       createdAt: letter.created_at,
     }));
+
+    setCache(CACHE_LETTERS, letters);
+    return letters;
   },
 
   setLetters: async (letters: Letter[]): Promise<void> => {
@@ -143,12 +236,14 @@ export const storage = {
       );
 
       if (error) {
-        console.error('Error saving letters:', error);
+        logger.error('letters.set', 'Failed to save letters', { error: error.message, code: error.code });
       }
     }
   },
 
   addLetter: async (letter: Letter): Promise<void> => {
+    logger.info('letter.add', 'Adding letter', { id: letter.id, title: letter.title });
+
     const { error } = await supabase.from('letters').insert({
       id: letter.id,
       title: letter.title,
@@ -158,11 +253,13 @@ export const storage = {
     });
 
     if (error) {
-      console.error('Error adding letter:', error);
+      logger.error('letter.add', 'Failed to add letter', { id: letter.id, error: error.message, code: error.code });
     }
   },
 
   updateLetter: async (letter: Letter): Promise<void> => {
+    logger.info('letter.update', 'Updating letter', { id: letter.id });
+
     const { error } = await supabase
       .from('letters')
       .update({
@@ -173,19 +270,25 @@ export const storage = {
       .eq('id', letter.id);
 
     if (error) {
-      console.error('Error updating letter:', error);
+      logger.error('letter.update', 'Failed to update letter', { id: letter.id, error: error.message, code: error.code });
     }
   },
 
   deleteLetter: async (id: string): Promise<void> => {
+    logger.info('letter.delete', 'Deleting letter', { id });
+
     const { error } = await supabase.from('letters').delete().eq('id', id);
 
     if (error) {
-      console.error('Error deleting letter:', error);
+      logger.error('letter.delete', 'Failed to delete letter', { id, error: error.message, code: error.code });
     }
   },
 
   // Flowers - now using Supabase
+  getCachedFlowers: (): Flower[] | null => {
+    return getCache<Flower[]>(CACHE_FLOWERS);
+  },
+
   getFlowers: async (): Promise<Flower[]> => {
     const { data, error } = await supabase
       .from('flowers')
@@ -193,16 +296,19 @@ export const storage = {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching flowers:', error);
-      return [];
+      logger.error('flowers.fetch', 'Failed to fetch flowers', { error: error.message, code: error.code });
+      return getCache<Flower[]>(CACHE_FLOWERS) || [];
     }
 
-    return (data || []).map((flower) => ({
+    const flowers = (data || []).map((flower) => ({
       id: flower.id,
       message: flower.message,
       isBloomed: flower.is_bloomed,
       type: flower.type as Flower['type'],
     }));
+
+    setCache(CACHE_FLOWERS, flowers);
+    return flowers;
   },
 
   setFlowers: async (flowers: Flower[]): Promise<void> => {
@@ -221,12 +327,14 @@ export const storage = {
       );
 
       if (error) {
-        console.error('Error saving flowers:', error);
+        logger.error('flowers.set', 'Failed to save flowers', { error: error.message, code: error.code });
       }
     }
   },
 
   addFlower: async (flower: Flower): Promise<void> => {
+    logger.info('flower.add', 'Adding flower', { id: flower.id, type: flower.type });
+
     const { error } = await supabase.from('flowers').insert({
       id: flower.id,
       message: flower.message,
@@ -235,11 +343,13 @@ export const storage = {
     });
 
     if (error) {
-      console.error('Error adding flower:', error);
+      logger.error('flower.add', 'Failed to add flower', { id: flower.id, error: error.message, code: error.code });
     }
   },
 
   updateFlower: async (flower: Flower): Promise<void> => {
+    logger.info('flower.update', 'Updating flower', { id: flower.id });
+
     const { error } = await supabase
       .from('flowers')
       .update({
@@ -250,15 +360,17 @@ export const storage = {
       .eq('id', flower.id);
 
     if (error) {
-      console.error('Error updating flower:', error);
+      logger.error('flower.update', 'Failed to update flower', { id: flower.id, error: error.message, code: error.code });
     }
   },
 
   deleteFlower: async (id: string): Promise<void> => {
+    logger.info('flower.delete', 'Deleting flower', { id });
+
     const { error } = await supabase.from('flowers').delete().eq('id', id);
 
     if (error) {
-      console.error('Error deleting flower:', error);
+      logger.error('flower.delete', 'Failed to delete flower', { id, error: error.message, code: error.code });
     }
   },
 
@@ -287,7 +399,7 @@ export const storage = {
     });
 
     if (error) {
-      console.error('Error saving password:', error);
+      logger.error('password.set', 'Failed to save password', { error: error.message, code: error.code });
     }
   },
 
