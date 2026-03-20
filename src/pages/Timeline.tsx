@@ -112,13 +112,26 @@ export default function Timeline() {
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, photo: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    const img = new window.Image();
+    img.onload = () => {
+      const MAX_DIM = 1200;
+      let { width, height } = img;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.7);
+      setFormData((prev) => ({ ...prev, photo: compressed }));
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
