@@ -160,6 +160,7 @@ export const storage = {
 
     if (error) {
       logger.error('timeline.add', 'Failed to add timeline entry', { id: entry.id, error: error.message, code: error.code });
+      throw new Error(`Failed to add timeline entry: ${error.message}`);
     }
   },
 
@@ -178,6 +179,7 @@ export const storage = {
 
     if (error) {
       logger.error('timeline.update', 'Failed to update timeline entry', { id: entry.id, error: error.message, code: error.code });
+      throw new Error(`Failed to update timeline entry: ${error.message}`);
     }
   },
 
@@ -188,6 +190,7 @@ export const storage = {
 
     if (error) {
       logger.error('timeline.delete', 'Failed to delete timeline entry', { id, error: error.message, code: error.code });
+      throw new Error(`Failed to delete timeline entry: ${error.message}`);
     }
   },
 
@@ -254,6 +257,7 @@ export const storage = {
 
     if (error) {
       logger.error('letter.add', 'Failed to add letter', { id: letter.id, error: error.message, code: error.code });
+      throw new Error(`Failed to add letter: ${error.message}`);
     }
   },
 
@@ -271,6 +275,7 @@ export const storage = {
 
     if (error) {
       logger.error('letter.update', 'Failed to update letter', { id: letter.id, error: error.message, code: error.code });
+      throw new Error(`Failed to update letter: ${error.message}`);
     }
   },
 
@@ -281,6 +286,7 @@ export const storage = {
 
     if (error) {
       logger.error('letter.delete', 'Failed to delete letter', { id, error: error.message, code: error.code });
+      throw new Error(`Failed to delete letter: ${error.message}`);
     }
   },
 
@@ -344,6 +350,7 @@ export const storage = {
 
     if (error) {
       logger.error('flower.add', 'Failed to add flower', { id: flower.id, error: error.message, code: error.code });
+      throw new Error(`Failed to add flower: ${error.message}`);
     }
   },
 
@@ -361,6 +368,7 @@ export const storage = {
 
     if (error) {
       logger.error('flower.update', 'Failed to update flower', { id: flower.id, error: error.message, code: error.code });
+      throw new Error(`Failed to update flower: ${error.message}`);
     }
   },
 
@@ -371,6 +379,7 @@ export const storage = {
 
     if (error) {
       logger.error('flower.delete', 'Failed to delete flower', { id, error: error.message, code: error.code });
+      throw new Error(`Failed to delete flower: ${error.message}`);
     }
   },
 

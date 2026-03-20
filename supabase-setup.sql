@@ -45,6 +45,23 @@ CREATE POLICY "Allow all operations on letters" ON letters FOR ALL USING (true) 
 CREATE POLICY "Allow all operations on flowers" ON flowers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on app_settings" ON app_settings FOR ALL USING (true) WITH CHECK (true);
 
+-- Create app_logs table (for error/info logging)
+CREATE TABLE IF NOT EXISTS app_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level TEXT NOT NULL CHECK (level IN ('info', 'error')),
+  action TEXT NOT NULL,
+  message TEXT,
+  details JSONB,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE app_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all operations on app_logs" ON app_logs FOR ALL USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_app_logs_created_at ON app_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_app_logs_level ON app_logs(level);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_timeline_entries_date ON timeline_entries(date);
 CREATE INDEX IF NOT EXISTS idx_letters_created_at ON letters(created_at);

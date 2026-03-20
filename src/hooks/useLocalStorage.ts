@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TimelineEntry, Letter, Flower } from '../types';
 import { storage } from '../utils/storage';
+import { logger } from '../utils/logger';
 
 export function useTimeline() {
   const [entries, setEntries] = useState<TimelineEntry[]>(() => storage.getCachedTimeline() || []);
@@ -29,7 +30,7 @@ export function useTimeline() {
     try {
       await storage.addTimelineEntry(entry);
     } catch (error) {
-      console.error('Failed to add entry:', error);
+      logger.error('hook.timeline.add', 'Optimistic add failed, reverting', { id: entry.id, error: String(error) });
       await loadEntries();
     }
   };
@@ -40,7 +41,7 @@ export function useTimeline() {
     try {
       await storage.updateTimelineEntry(entry);
     } catch (error) {
-      console.error('Failed to update entry:', error);
+      logger.error('hook.timeline.update', 'Optimistic update failed, reverting', { id: entry.id, error: String(error) });
       await loadEntries();
     }
   };
@@ -51,7 +52,7 @@ export function useTimeline() {
     try {
       await storage.deleteTimelineEntry(id);
     } catch (error) {
-      console.error('Failed to delete entry:', error);
+      logger.error('hook.timeline.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadEntries();
     }
   };
@@ -84,7 +85,7 @@ export function useLetters() {
     try {
       await storage.addLetter(letter);
     } catch (error) {
-      console.error('Failed to add letter:', error);
+      logger.error('hook.letter.add', 'Optimistic add failed, reverting', { id: letter.id, error: String(error) });
       await loadLetters();
     }
   };
@@ -95,7 +96,7 @@ export function useLetters() {
     try {
       await storage.updateLetter(letter);
     } catch (error) {
-      console.error('Failed to update letter:', error);
+      logger.error('hook.letter.update', 'Optimistic update failed, reverting', { id: letter.id, error: String(error) });
       await loadLetters();
     }
   };
@@ -106,7 +107,7 @@ export function useLetters() {
     try {
       await storage.deleteLetter(id);
     } catch (error) {
-      console.error('Failed to delete letter:', error);
+      logger.error('hook.letter.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadLetters();
     }
   };
@@ -139,7 +140,7 @@ export function useFlowers() {
     try {
       await storage.addFlower(flower);
     } catch (error) {
-      console.error('Failed to add flower:', error);
+      logger.error('hook.flower.add', 'Optimistic add failed, reverting', { id: flower.id, error: String(error) });
       await loadFlowers();
     }
   };
@@ -150,7 +151,7 @@ export function useFlowers() {
     try {
       await storage.updateFlower(flower);
     } catch (error) {
-      console.error('Failed to update flower:', error);
+      logger.error('hook.flower.update', 'Optimistic update failed, reverting', { id: flower.id, error: String(error) });
       await loadFlowers();
     }
   };
@@ -161,7 +162,7 @@ export function useFlowers() {
     try {
       await storage.deleteFlower(id);
     } catch (error) {
-      console.error('Failed to delete flower:', error);
+      logger.error('hook.flower.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadFlowers();
     }
   };

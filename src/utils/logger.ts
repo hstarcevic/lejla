@@ -18,23 +18,34 @@ async function flush() {
 
   const batch = queue.splice(0, queue.length);
   try {
-    await supabase.from('app_logs').insert(
+    const { error } = await supabase.from('app_logs').insert(
       batch.map((entry) => ({
         level: entry.level,
         action: entry.action,
         message: entry.message || null,
         details: entry.details || null,
+        user_agent: navigator.userAgent,
       }))
     );
-  } catch {
-    // If logging itself fails, don't crash the app
+    if (error) {
+      console.warn('[logger] Failed to flush logs to Supabase:', error.message);
+    }
+  } catch (e) {
+    console.warn('[logger] Failed to flush logs:', e);
   }
   flushing = false;
 }
 
 function log(entry: LogEntry) {
+  // Always write to console so errors are visible in devtools
+  const prefix = `[${entry.action}]`;
+  if (entry.level === 'error') {
+    console.error(prefix, entry.message, entry.details);
+  } else {
+    console.log(prefix, entry.message, entry.details);
+  }
+
   queue.push(entry);
-  // Debounce: flush after a short delay to batch nearby logs
   setTimeout(flush, 500);
 }
 
