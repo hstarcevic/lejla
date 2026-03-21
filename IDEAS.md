@@ -8,7 +8,7 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 
 ### Countdown & Anniversaries
 - Countdown timer to upcoming dates (next anniversary, birthday, trip)
-- "Days together" counter on the home screen
+- ~~"Days together" counter on the home screen~~ ✅
 - Auto-generated anniversary reminders (monthly/yearly milestones)
 
 ### Shared Bucket List
