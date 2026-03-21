@@ -64,7 +64,7 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 - Show compression/upload progress indicator
 - Allow cropping/rotating before upload
 - Support multiple photos per timeline entry
-- Tap photo to view fullscreen with pinch-to-zoom
+- ~~Tap photo to view fullscreen with pinch-to-zoom~~ ✅
 
 ### Password / Auth
 - "Stay logged in" toggle (persistent session)
@@ -73,25 +73,25 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 
 ### Timeline UX
 - Swipe to delete (mobile gesture)
-- Search/filter entries by title or date range
-- Group entries by month/year with section headers
+- ~~Search/filter entries by title or date range~~ ✅
+- ~~Group entries by month/year with section headers~~ ✅
 - ~~Infinite scroll or pagination for large timelines~~ ✅
 
 ### Letters UX
-- Envelope opening animation when reading for the first time
+- ~~Envelope opening animation when reading for the first time~~ ✅
 - Schedule a letter to "arrive" on a future date
 - Rich text or at least basic formatting (bold, italic)
 
 ### Garden UX
 - Watering animation / daily interaction to keep flowers alive
 - Growth stages (seed → sprout → bloom) over time instead of instant
-- Garden stats: total flowers planted, most common type
+- ~~Garden stats: total flowers planted, most common type~~ ✅
 - Seasonal themes (snow in winter, leaves in fall)
 
 ### General Polish
 - Dark mode
 - ~~Pull-to-refresh on mobile~~ ✅
-- Haptic feedback on interactions (vibration API)
+- ~~Haptic feedback on interactions (vibration API)~~ ✅
 - ~~Loading skeletons instead of spinners~~ ✅
 - Page transition animations between tabs (already partially done)
 - ~~Confirmation dialog before deleting entries ("Jesi li siguran/na?")~~ ✅

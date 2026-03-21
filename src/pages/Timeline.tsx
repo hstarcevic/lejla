@@ -1,17 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { TimelineEntry } from '../types';
 import { useTimeline } from '../hooks/useLocalStorage';
 import { generateId, storage } from '../utils/storage';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { haptic } from '../utils/haptic';
 
-function TimelineCard({ entry, index, onEdit, onDelete }: {
+function TimelineCard({ entry, index, onEdit, onDelete, onPhotoClick }: {
   entry: TimelineEntry;
   index: number;
   onEdit: (entry: TimelineEntry) => void;
   onDelete: (id: string) => void;
+  onPhotoClick: (src: string) => void;
 }) {
   const [photo, setPhoto] = useState<string | undefined>(entry.photo);
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -84,7 +86,8 @@ function TimelineCard({ entry, index, onEdit, onDelete }: {
           <img
             src={photo}
             alt={entry.title}
-            className="w-full h-48 object-cover rounded-lg mb-2"
+            onClick={() => onPhotoClick(photo)}
+            className="w-full h-48 object-cover rounded-lg mb-2 cursor-pointer active:opacity-80"
           />
         )}
         {entry.description && (
@@ -100,13 +103,39 @@ export default function Timeline() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     date: '',
     title: '',
     description: '',
     photo: '',
   });
-  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(refresh);
+  const { containerRef, pullDistance, isRefreshing } = usePullToRefresh(refresh);
+
+  const filteredEntries = useMemo(() => {
+    if (!searchQuery.trim()) return entries;
+    const q = searchQuery.toLowerCase();
+    return entries.filter(
+      (e) => e.title.toLowerCase().includes(q) || e.date.includes(q)
+    );
+  }, [entries, searchQuery]);
+
+  const groupedEntries = useMemo(() => {
+    const groups: { label: string; entries: TimelineEntry[] }[] = [];
+    let currentLabel = '';
+    for (const entry of filteredEntries) {
+      const d = new Date(entry.date);
+      const label = d.toLocaleDateString('bs-BA', { year: 'numeric', month: 'long' });
+      if (label !== currentLabel) {
+        currentLabel = label;
+        groups.push({ label, entries: [entry] });
+      } else {
+        groups[groups.length - 1].entries.push(entry);
+      }
+    }
+    return groups;
+  }, [filteredEntries]);
 
   const resetForm = () => {
     setFormData({ date: '', title: '', description: '', photo: '' });
@@ -169,6 +198,7 @@ export default function Timeline() {
   };
 
   const handleDelete = (id: string) => {
+    haptic();
     setDeletingId(id);
   };
 
@@ -181,10 +211,10 @@ export default function Timeline() {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      {...handlers}
     >
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || isRefreshing) && (
@@ -204,7 +234,7 @@ export default function Timeline() {
         onConfirm={confirmDelete}
         onCancel={() => setDeletingId(null)}
       />
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
           {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
@@ -219,6 +249,19 @@ export default function Timeline() {
           </button>
         )}
       </div>
+
+      {!isLoading && entries.length > 0 && (
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-300" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Pretraži uspomene..."
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
+          />
+        </div>
+      )}
 
       {isAdding && (
         <motion.form
@@ -324,6 +367,11 @@ export default function Timeline() {
           <p>Još nema uspomena</p>
           <p className="text-sm">Dodaj prvu uspomenu</p>
         </div>
+      ) : filteredEntries.length === 0 ? (
+        <div className="text-center py-8 text-primary-300">
+          <Search className="w-8 h-8 mx-auto mb-2" />
+          <p className="text-sm">Nema rezultata</p>
+        </div>
       ) : (
         <>
           <div className="relative">
@@ -331,14 +379,23 @@ export default function Timeline() {
             <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 to-secondary-300" />
 
             <div className="space-y-6">
-              {entries.map((entry, index) => (
-                <TimelineCard
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
+              {groupedEntries.map((group) => (
+                <div key={group.label}>
+                  <div className="relative pl-10 mb-3">
+                    <p className="text-xs font-semibold text-primary-400 uppercase tracking-wide">{group.label}</p>
+                  </div>
+                  {group.entries.map((entry, index) => (
+                    <div key={entry.id} className="mb-6 last:mb-0">
+                      <TimelineCard
+                        entry={entry}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onPhotoClick={(src) => { haptic(); setLightboxPhoto(src); }}
+                      />
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -366,6 +423,34 @@ export default function Timeline() {
           )}
         </>
       )}
+
+      {/* Photo Lightbox */}
+      <AnimatePresence>
+        {lightboxPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setLightboxPhoto(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              src={lightboxPhoto}
+              alt=""
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            <button
+              onClick={() => setLightboxPhoto(null)}
+              className="absolute top-4 right-4 p-2 text-white/80 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

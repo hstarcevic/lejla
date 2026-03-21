@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Check, Flower2 } from 'lucide-react';
 import { Flower } from '../types';
@@ -6,6 +6,7 @@ import { useFlowers } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { haptic } from '../utils/haptic';
 
 const flowerEmojis = {
   rose: '🌹',
@@ -32,7 +33,21 @@ export default function Garden() {
     message: '',
     type: 'rose' as Flower['type'],
   });
-  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(refresh);
+  const { containerRef, pullDistance, isRefreshing } = usePullToRefresh(refresh);
+
+  const stats = useMemo(() => {
+    if (flowers.length === 0) return null;
+    const counts: Record<string, number> = {};
+    for (const f of flowers) {
+      counts[f.type] = (counts[f.type] || 0) + 1;
+    }
+    const favorite = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    return {
+      total: flowers.length,
+      bloomed: flowers.filter((f) => f.isBloomed).length,
+      favoriteType: favorite[0] as Flower['type'],
+    };
+  }, [flowers]);
 
   const resetForm = () => {
     setFormData({ message: '', type: 'rose' });
@@ -54,6 +69,7 @@ export default function Garden() {
   };
 
   const handleBloom = async (flower: Flower) => {
+    haptic(20);
     if (!flower.isBloomed) {
       await updateFlower({ ...flower, isBloomed: true });
     }
@@ -61,6 +77,7 @@ export default function Garden() {
   };
 
   const handleDelete = (id: string) => {
+    haptic();
     setDeletingId(id);
   };
 
@@ -74,10 +91,10 @@ export default function Garden() {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      {...handlers}
     >
       {(pullDistance > 0 || isRefreshing) && (
         <div
@@ -182,6 +199,16 @@ export default function Garden() {
           <p className="text-sm">Posadi prvi cvijet</p>
         </div>
       ) : (
+        <>
+        {stats && (
+          <div className="flex justify-center gap-4 mb-4 text-xs text-primary-500">
+            <span>{stats.total} {stats.total === 1 ? 'cvijet' : stats.total < 5 ? 'cvijeta' : 'cvjetova'}</span>
+            <span>·</span>
+            <span>{stats.bloomed} procvjetalo</span>
+            <span>·</span>
+            <span>Najčešći: {flowerEmojis[stats.favoriteType]}</span>
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-3">
           {flowers.map((flower, index) => (
             <motion.div
@@ -210,6 +237,7 @@ export default function Garden() {
             </motion.div>
           ))}
         </div>
+        </>
       )}
 
       {/* Flower Message Modal */}

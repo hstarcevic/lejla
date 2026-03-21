@@ -6,14 +6,16 @@ import { useLetters } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { haptic } from '../utils/haptic';
 
 export default function Letters() {
   const { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter, refresh, page, setPage, totalPages } = useLetters();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isFirstOpen, setIsFirstOpen] = useState(false);
   const [formData, setFormData] = useState({ title: '', content: '' });
-  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(refresh);
+  const { containerRef, pullDistance, isRefreshing } = usePullToRefresh(refresh);
 
   const resetForm = () => {
     setFormData({ title: '', content: '' });
@@ -36,14 +38,18 @@ export default function Letters() {
   };
 
   const handleOpen = async (letter: Letter) => {
-    if (!letter.isOpened) {
+    haptic(20);
+    const opening = !letter.isOpened;
+    if (opening) {
       await updateLetter({ ...letter, isOpened: true });
     }
+    setIsFirstOpen(opening);
     setSelectedLetter(letter);
   };
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    haptic();
     setDeletingId(id);
   };
 
@@ -56,10 +62,10 @@ export default function Letters() {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      {...handlers}
     >
       {(pullDistance > 0 || isRefreshing) && (
         <div
@@ -230,24 +236,42 @@ export default function Letters() {
             onClick={() => setSelectedLetter(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={isFirstOpen ? { scale: 0.6, rotateX: 90 } : { scale: 0.9, y: 20 }}
+              animate={{ scale: 1, rotateX: 0, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
+              transition={isFirstOpen ? { type: 'spring', stiffness: 200, damping: 20 } : undefined}
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl p-6 max-w-sm w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+              style={{ perspective: 800 }}
             >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="font-serif text-xl text-primary-600">{selectedLetter.title}</h3>
-                <button
-                  onClick={() => setSelectedLetter(null)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
+              {isFirstOpen && (
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="text-center mb-2"
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">
-                {selectedLetter.content}
-              </div>
+                  <Mail className="w-10 h-10 text-primary-400 mx-auto" />
+                </motion.div>
+              )}
+              <motion.div
+                initial={isFirstOpen ? { opacity: 0, y: 10 } : { opacity: 1 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={isFirstOpen ? { delay: 0.5 } : undefined}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-serif text-xl text-primary-600">{selectedLetter.title}</h3>
+                  <button
+                    onClick={() => setSelectedLetter(null)}
+                    className="p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">
+                  {selectedLetter.content}
+                </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
