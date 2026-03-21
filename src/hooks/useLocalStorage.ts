@@ -2,25 +2,33 @@ import { useState, useEffect } from 'react';
 import { TimelineEntry, Letter, Flower } from '../types';
 import { storage } from '../utils/storage';
 import { logger } from '../utils/logger';
+import { showToast } from '../components/Toast';
+
+const TIMELINE_PAGE_SIZE = 20;
 
 export function useTimeline() {
   const [entries, setEntries] = useState<TimelineEntry[]>(() => storage.getCachedTimeline() || []);
   const [isLoading, setIsLoading] = useState(() => !storage.getCachedTimeline());
   const [isSyncing, setIsSyncing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadEntries();
-  }, []);
+  }, [page]);
 
   const loadEntries = async () => {
     const hasCache = entries.length > 0;
     if (!hasCache) setIsLoading(true);
     if (hasCache) setIsSyncing(true);
-    const data = await storage.getTimeline();
-    setEntries(data);
+    const result = await storage.getTimelinePage(page, TIMELINE_PAGE_SIZE);
+    setEntries(result.data);
+    setTotalCount(result.total);
     setIsLoading(false);
     setIsSyncing(false);
   };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / TIMELINE_PAGE_SIZE));
 
   const addEntry = async (entry: TimelineEntry) => {
     setEntries(prev => [...prev, entry].sort((a, b) =>
@@ -32,6 +40,7 @@ export function useTimeline() {
     } catch (error) {
       logger.error('hook.timeline.add', 'Optimistic add failed, reverting', { id: entry.id, error: String(error) });
       await loadEntries();
+      showToast('Nije uspjelo sačuvati uspomenu.', () => addEntry(entry));
     }
   };
 
@@ -43,6 +52,7 @@ export function useTimeline() {
     } catch (error) {
       logger.error('hook.timeline.update', 'Optimistic update failed, reverting', { id: entry.id, error: String(error) });
       await loadEntries();
+      showToast('Nije uspjelo ažurirati uspomenu.', () => updateEntry(entry));
     }
   };
 
@@ -54,30 +64,38 @@ export function useTimeline() {
     } catch (error) {
       logger.error('hook.timeline.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadEntries();
+      showToast('Nije uspjelo obrisati uspomenu.', () => deleteEntry(id));
     }
   };
 
-  return { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, refresh: loadEntries };
+  return { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, refresh: loadEntries, page, setPage, totalPages };
 }
+
+const LETTERS_PAGE_SIZE = 20;
 
 export function useLetters() {
   const [letters, setLetters] = useState<Letter[]>(() => storage.getCachedLetters() || []);
   const [isLoading, setIsLoading] = useState(() => !storage.getCachedLetters());
   const [isSyncing, setIsSyncing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadLetters();
-  }, []);
+  }, [page]);
 
   const loadLetters = async () => {
     const hasCache = letters.length > 0;
     if (!hasCache) setIsLoading(true);
     if (hasCache) setIsSyncing(true);
-    const data = await storage.getLetters();
-    setLetters(data);
+    const result = await storage.getLettersPage(page, LETTERS_PAGE_SIZE);
+    setLetters(result.data);
+    setTotalCount(result.total);
     setIsLoading(false);
     setIsSyncing(false);
   };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / LETTERS_PAGE_SIZE));
 
   const addLetter = async (letter: Letter) => {
     setLetters(prev => [letter, ...prev]);
@@ -87,6 +105,7 @@ export function useLetters() {
     } catch (error) {
       logger.error('hook.letter.add', 'Optimistic add failed, reverting', { id: letter.id, error: String(error) });
       await loadLetters();
+      showToast('Nije uspjelo sačuvati pismo.', () => addLetter(letter));
     }
   };
 
@@ -98,6 +117,7 @@ export function useLetters() {
     } catch (error) {
       logger.error('hook.letter.update', 'Optimistic update failed, reverting', { id: letter.id, error: String(error) });
       await loadLetters();
+      showToast('Nije uspjelo ažurirati pismo.', () => updateLetter(letter));
     }
   };
 
@@ -109,10 +129,11 @@ export function useLetters() {
     } catch (error) {
       logger.error('hook.letter.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadLetters();
+      showToast('Nije uspjelo obrisati pismo.', () => deleteLetter(id));
     }
   };
 
-  return { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter, refresh: loadLetters };
+  return { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter, refresh: loadLetters, page, setPage, totalPages };
 }
 
 export function useFlowers() {
@@ -142,6 +163,7 @@ export function useFlowers() {
     } catch (error) {
       logger.error('hook.flower.add', 'Optimistic add failed, reverting', { id: flower.id, error: String(error) });
       await loadFlowers();
+      showToast('Nije uspjelo posaditi cvijet.', () => addFlower(flower));
     }
   };
 
@@ -153,6 +175,7 @@ export function useFlowers() {
     } catch (error) {
       logger.error('hook.flower.update', 'Optimistic update failed, reverting', { id: flower.id, error: String(error) });
       await loadFlowers();
+      showToast('Nije uspjelo ažurirati cvijet.', () => updateFlower(flower));
     }
   };
 
@@ -164,6 +187,7 @@ export function useFlowers() {
     } catch (error) {
       logger.error('hook.flower.delete', 'Optimistic delete failed, reverting', { id, error: String(error) });
       await loadFlowers();
+      showToast('Nije uspjelo obrisati cvijet.', () => deleteFlower(id));
     }
   };
 

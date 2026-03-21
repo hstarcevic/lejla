@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Calendar, Trash2, Edit2, X, Check, Image } from 'lucide-react';
+import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TimelineEntry } from '../types';
 import { useTimeline } from '../hooks/useLocalStorage';
 import { generateId, storage } from '../utils/storage';
@@ -94,7 +94,7 @@ function TimelineCard({ entry, index, onEdit, onDelete }: {
 }
 
 export default function Timeline() {
-  const { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry } = useTimeline();
+  const { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, page, setPage, totalPages } = useTimeline();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -280,22 +280,46 @@ export default function Timeline() {
           <p className="text-sm">Dodaj prvu uspomenu</p>
         </div>
       ) : (
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 to-secondary-300" />
+        <>
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 to-secondary-300" />
 
-          <div className="space-y-6">
-            {entries.map((entry, index) => (
-              <TimelineCard
-                key={entry.id}
-                entry={entry}
-                index={index}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            ))}
+            <div className="space-y-6">
+              {entries.map((entry, index) => (
+                <TimelineCard
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-primary-500">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </motion.div>
   );

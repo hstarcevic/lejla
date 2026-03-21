@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Mail, MailOpen, X, Check, Trash2 } from 'lucide-react';
+import { Plus, Mail, MailOpen, X, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Letter } from '../types';
 import { useLetters } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
 
 export default function Letters() {
-  const { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter } = useLetters();
+  const { letters, isLoading, isSyncing, addLetter, updateLetter, deleteLetter, page, setPage, totalPages } = useLetters();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [formData, setFormData] = useState({ title: '', content: '' });
@@ -124,40 +124,64 @@ export default function Letters() {
           <p className="text-sm">Napiši prvo ljubavno pismo</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {letters.map((letter, index) => (
-            <motion.div
-              key={letter.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: Math.min(index * 0.05, 0.3) }}
-              onClick={() => handleOpen(letter)}
-              className="relative bg-white rounded-xl p-4 shadow-md shadow-primary-50 cursor-pointer hover:shadow-lg transition-shadow"
-            >
-              <button
-                onClick={(e) => handleDelete(letter.id, e)}
-                className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 transition-colors"
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            {letters.map((letter, index) => (
+              <motion.div
+                key={letter.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: Math.min(index * 0.05, 0.3) }}
+                onClick={() => handleOpen(letter)}
+                className="relative bg-white rounded-xl p-4 shadow-md shadow-primary-50 cursor-pointer hover:shadow-lg transition-shadow"
               >
-                <Trash2 className="w-3 h-3" />
+                <button
+                  onClick={(e) => handleDelete(letter.id, e)}
+                  className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+                <div className="flex flex-col items-center text-center">
+                  {letter.isOpened ? (
+                    <MailOpen className="w-8 h-8 text-primary-300 mb-2" />
+                  ) : (
+                    <motion.div
+                      animate={{ rotate: [0, -5, 5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Mail className="w-8 h-8 text-primary-400 mb-2" />
+                    </motion.div>
+                  )}
+                  <h3 className="font-medium text-sm text-primary-600 line-clamp-2">
+                    {letter.title}
+                  </h3>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="flex flex-col items-center text-center">
-                {letter.isOpened ? (
-                  <MailOpen className="w-8 h-8 text-primary-300 mb-2" />
-                ) : (
-                  <motion.div
-                    animate={{ rotate: [0, -5, 5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <Mail className="w-8 h-8 text-primary-400 mb-2" />
-                  </motion.div>
-                )}
-                <h3 className="font-medium text-sm text-primary-600 line-clamp-2">
-                  {letter.title}
-                </h3>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              <span className="text-sm text-primary-500">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Letter Modal */}

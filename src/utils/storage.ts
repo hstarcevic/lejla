@@ -104,6 +104,50 @@ export const storage = {
     return entries;
   },
 
+  getTimelinePage: async (page: number, pageSize: number): Promise<{ data: TimelineEntry[]; total: number }> => {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { count, error: countError } = await supabase
+      .from('timeline_entries')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      logger.error('timeline.count', 'Failed to count timeline', { error: countError.message });
+      const cached = getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
+      return { data: cached.slice(from, to + 1), total: cached.length };
+    }
+
+    const { data, error } = await supabase
+      .from('timeline_entries')
+      .select('id, date, title, description')
+      .order('date', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      logger.error('timeline.fetch_page', 'Failed to fetch timeline page', { error: error.message, page });
+      const cached = getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
+      return { data: cached.slice(from, to + 1), total: cached.length };
+    }
+
+    const { data: photoData } = await supabase
+      .from('timeline_entries')
+      .select('id')
+      .not('photo', 'is', null);
+
+    const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
+
+    const entries = (data || []).map((entry) => ({
+      id: entry.id,
+      date: entry.date,
+      title: entry.title,
+      description: entry.description,
+      hasPhoto: idsWithPhotos.has(entry.id),
+    }));
+
+    return { data: entries, total: count || 0 };
+  },
+
   getTimelineEntryPhoto: async (id: string): Promise<string | undefined> => {
     // Check IndexedDB cache first
     const cached = await getCachedPhoto(id);
@@ -220,6 +264,43 @@ export const storage = {
 
     setCache(CACHE_LETTERS, letters);
     return letters;
+  },
+
+  getLettersPage: async (page: number, pageSize: number): Promise<{ data: Letter[]; total: number }> => {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    const { count, error: countError } = await supabase
+      .from('letters')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      logger.error('letters.count', 'Failed to count letters', { error: countError.message });
+      const cached = getCache<Letter[]>(CACHE_LETTERS) || [];
+      return { data: cached.slice(from, to + 1), total: cached.length };
+    }
+
+    const { data, error } = await supabase
+      .from('letters')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      logger.error('letters.fetch_page', 'Failed to fetch letters page', { error: error.message, page });
+      const cached = getCache<Letter[]>(CACHE_LETTERS) || [];
+      return { data: cached.slice(from, to + 1), total: cached.length };
+    }
+
+    const letters = (data || []).map((letter) => ({
+      id: letter.id,
+      title: letter.title,
+      content: letter.content,
+      isOpened: letter.is_opened,
+      createdAt: letter.created_at,
+    }));
+
+    return { data: letters, total: count || 0 };
   },
 
   setLetters: async (letters: Letter[]): Promise<void> => {

@@ -4,6 +4,7 @@ import { Page } from './types';
 import { storage } from './utils/storage';
 import PasswordGate from './components/PasswordGate';
 import Navigation from './components/Navigation';
+import ToastContainer from './components/Toast';
 import Timeline from './pages/Timeline';
 import Letters from './pages/Letters';
 import Garden from './pages/Garden';
@@ -52,6 +53,7 @@ function App() {
 
   return (
     <div className="min-h-screen pb-20">
+      <ToastContainer />
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-primary-100 px-4 py-3">
         <h1 className="text-center font-serif text-2xl text-primary-600">
           Lejla & Hamza ❤️

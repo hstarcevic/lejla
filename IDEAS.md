@@ -67,7 +67,6 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 - Tap photo to view fullscreen with pinch-to-zoom
 
 ### Password / Auth
-- Hash the password instead of storing plain text
 - "Stay logged in" toggle (persistent session)
 - Password reset flow (currently no recovery if forgotten)
 - Optional biometric unlock on supported devices (WebAuthn)
