@@ -4,6 +4,8 @@ import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRig
 import { TimelineEntry } from '../types';
 import { useTimeline } from '../hooks/useLocalStorage';
 import { generateId, storage } from '../utils/storage';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 function TimelineCard({ entry, index, onEdit, onDelete }: {
   entry: TimelineEntry;
@@ -94,15 +96,17 @@ function TimelineCard({ entry, index, onEdit, onDelete }: {
 }
 
 export default function Timeline() {
-  const { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, page, setPage, totalPages } = useTimeline();
+  const { entries, isLoading, isSyncing, addEntry, updateEntry, deleteEntry, refresh, page, setPage, totalPages } = useTimeline();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     date: '',
     title: '',
     description: '',
     photo: '',
   });
+  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(refresh);
 
   const resetForm = () => {
     setFormData({ date: '', title: '', description: '', photo: '' });
@@ -164,8 +168,15 @@ export default function Timeline() {
     setIsAdding(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteEntry(id);
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      await deleteEntry(deletingId);
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -173,7 +184,26 @@ export default function Timeline() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      {...handlers}
     >
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="flex justify-center overflow-hidden transition-all"
+          style={{ height: pullDistance }}
+        >
+          <div className={`text-primary-400 text-sm ${isRefreshing ? 'animate-pulse' : ''}`}>
+            {isRefreshing ? 'Osvježavanje...' : pullDistance >= 80 ? 'Pusti za osvježavanje' : 'Povuci za osvježavanje'}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        message="Jesi li sigurna da želiš obrisati ovu uspomenu?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
@@ -269,9 +299,24 @@ export default function Timeline() {
       )}
 
       {isLoading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
-          <p className="text-primary-300 mt-3">Učitavanje uspomena...</p>
+        <div className="relative">
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-100 to-secondary-100" />
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="relative pl-10 animate-pulse">
+                <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-200" />
+                <div className="bg-white rounded-xl p-4 shadow-md shadow-primary-50">
+                  <div className="h-3 w-24 bg-primary-100 rounded mb-2" />
+                  <div className="h-5 w-40 bg-primary-100 rounded mb-3" />
+                  <div className="w-full h-48 bg-primary-50 rounded-lg mb-2" />
+                  <div className="space-y-2">
+                    <div className="h-3 w-full bg-gray-100 rounded" />
+                    <div className="h-3 w-3/4 bg-gray-100 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : entries.length === 0 ? (
         <div className="text-center py-12 text-primary-300">

@@ -56,7 +56,8 @@ describe('Timeline', () => {
   it('renders loading state', () => {
     mockHook.isLoading = true;
     render(<Timeline />);
-    expect(screen.getByText('Učitavanje uspomena...')).toBeInTheDocument();
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('renders entries', () => {
@@ -124,6 +125,9 @@ describe('Timeline', () => {
     const buttons = document.querySelectorAll('.flex.gap-1 button');
     expect(buttons.length).toBeGreaterThanOrEqual(2);
     await user.click(buttons[1]); // delete button
+
+    // Confirm the deletion in the dialog
+    await user.click(screen.getByText('Da'));
 
     expect(mockHook.deleteEntry).toHaveBeenCalledWith('del-1');
   });

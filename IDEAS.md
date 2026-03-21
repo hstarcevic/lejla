@@ -50,9 +50,9 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 
 ## Quality of Life Improvements
 
-### Error Feedback for the User
-- Currently saves fail silently (optimistic update reverts without explanation)
-- Show a toast/snackbar: "Nije uspjelo sačuvati, pokušaj ponovo" with a retry button
+### ~~Error Feedback for the User~~ ✅
+- ~~Currently saves fail silently (optimistic update reverts without explanation)~~
+- ~~Show a toast/snackbar: "Nije uspjelo sačuvati, pokušaj ponovo" with a retry button~~
 - Distinguish between network errors and server errors
 
 ### Offline Support
@@ -75,7 +75,7 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 - Swipe to delete (mobile gesture)
 - Search/filter entries by title or date range
 - Group entries by month/year with section headers
-- Infinite scroll or pagination for large timelines
+- ~~Infinite scroll or pagination for large timelines~~ ✅
 
 ### Letters UX
 - Envelope opening animation when reading for the first time
@@ -90,14 +90,14 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 
 ### General Polish
 - Dark mode
-- Pull-to-refresh on mobile
+- ~~Pull-to-refresh on mobile~~ ✅
 - Haptic feedback on interactions (vibration API)
-- Loading skeletons instead of spinners
+- ~~Loading skeletons instead of spinners~~ ✅
 - Page transition animations between tabs (already partially done)
-- Confirmation dialog before deleting entries ("Jesi li siguran/na?")
+- ~~Confirmation dialog before deleting entries ("Jesi li siguran/na?")~~ ✅
 
 ### Performance
-- Paginate timeline/letters fetch instead of loading all at once
+- ~~Paginate timeline/letters fetch instead of loading all at once~~ ✅
 - Move photos to Supabase Storage (object storage) instead of base64 in the DB column — much better for large datasets
 - Add `updated_at` columns to enable incremental sync instead of full refetch
 

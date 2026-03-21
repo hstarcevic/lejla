@@ -4,6 +4,8 @@ import { Plus, X, Check, Flower2 } from 'lucide-react';
 import { Flower } from '../types';
 import { useFlowers } from '../hooks/useLocalStorage';
 import { generateId } from '../utils/storage';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 const flowerEmojis = {
   rose: '🌹',
@@ -22,13 +24,15 @@ const flowerColors = {
 };
 
 export default function Garden() {
-  const { flowers, isLoading, isSyncing, addFlower, updateFlower, deleteFlower } = useFlowers();
+  const { flowers, isLoading, isSyncing, addFlower, updateFlower, deleteFlower, refresh } = useFlowers();
   const [isAdding, setIsAdding] = useState(false);
   const [selectedFlower, setSelectedFlower] = useState<Flower | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     message: '',
     type: 'rose' as Flower['type'],
   });
+  const { pullDistance, isRefreshing, handlers } = usePullToRefresh(refresh);
 
   const resetForm = () => {
     setFormData({ message: '', type: 'rose' });
@@ -56,9 +60,16 @@ export default function Garden() {
     setSelectedFlower(flower);
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteFlower(id);
-    setSelectedFlower(null);
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingId) {
+      await deleteFlower(deletingId);
+      setDeletingId(null);
+      setSelectedFlower(null);
+    }
   };
 
   return (
@@ -66,7 +77,25 @@ export default function Garden() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      {...handlers}
     >
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="flex justify-center overflow-hidden transition-all"
+          style={{ height: pullDistance }}
+        >
+          <div className={`text-primary-400 text-sm ${isRefreshing ? 'animate-pulse' : ''}`}>
+            {isRefreshing ? 'Osvježavanje...' : pullDistance >= 80 ? 'Pusti za osvježavanje' : 'Povuci za osvježavanje'}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        message="Jesi li sigurna da želiš obrisati ovaj cvijet?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <h2 className="font-serif text-xl text-primary-600">Bašta ljubavi</h2>
@@ -139,9 +168,12 @@ export default function Garden() {
       )}
 
       {isLoading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
-          <p className="text-primary-300 mt-3">Učitavanje bašte...</p>
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="aspect-square flex items-center justify-center animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-primary-100" />
+            </div>
+          ))}
         </div>
       ) : flowers.length === 0 ? (
         <div className="text-center py-12 text-primary-300">

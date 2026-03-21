@@ -55,7 +55,8 @@ describe('Garden', () => {
   it('renders loading state', () => {
     mockHook.isLoading = true;
     render(<Garden />);
-    expect(screen.getByText('Učitavanje bašte...')).toBeInTheDocument();
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('renders bloomed flower emoji', () => {

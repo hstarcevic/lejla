@@ -54,7 +54,8 @@ describe('Letters', () => {
   it('renders loading state', () => {
     mockHook.isLoading = true;
     render(<Letters />);
-    expect(screen.getByText('Učitavanje pisama...')).toBeInTheDocument();
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('renders letter cards', () => {
