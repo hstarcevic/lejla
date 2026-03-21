@@ -10,6 +10,7 @@ import Timeline from './pages/Timeline';
 import Letters from './pages/Letters';
 import Garden from './pages/Garden';
 import { useDarkMode } from './hooks/useDarkMode';
+import { useNotifications, requestNotificationPermission } from './hooks/useNotifications';
 
 const pageVariants = {
   enter: (direction: number) => ({
@@ -33,6 +34,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const { isDark, toggle: toggleDark } = useDarkMode();
 
+  // Subscribe to Realtime notifications when authenticated
+  useNotifications(isAuthenticated);
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -43,6 +47,7 @@ function App() {
 
     if (authenticated && password) {
       setIsAuthenticated(true);
+      requestNotificationPermission();
     }
     setHasExistingPassword(!!password);
     setIsLoading(false);
@@ -51,6 +56,7 @@ function App() {
   const handleAuthenticate = () => {
     setIsAuthenticated(true);
     storage.setAuthenticated(true);
+    requestNotificationPermission();
   };
 
   const handleNavigate = (page: Page) => {

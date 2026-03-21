@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { TimelineEntry, Letter, Flower } from '../types';
 import { logger } from './logger';
+import { trackOwnWrite } from '../hooks/useNotifications';
 
 // Keep auth in localStorage since it's session-specific
 const AUTH_KEY = 'lejla_authenticated';
@@ -241,6 +242,7 @@ export const storage = {
 
   addTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
     logger.info('timeline.add', 'Adding timeline entry', { id: entry.id, title: entry.title, hasPhoto: !!entry.photo });
+    trackOwnWrite(entry.id);
 
     let photoValue: string | null = null;
     if (entry.photo) {
@@ -391,6 +393,7 @@ export const storage = {
 
   addLetter: async (letter: Letter): Promise<void> => {
     logger.info('letter.add', 'Adding letter', { id: letter.id, title: letter.title });
+    trackOwnWrite(letter.id);
 
     const { error } = await supabase.from('letters').insert({
       id: letter.id,
@@ -516,6 +519,7 @@ export const storage = {
 
   addFlower: async (flower: Flower): Promise<void> => {
     logger.info('flower.add', 'Adding flower', { id: flower.id, type: flower.type });
+    trackOwnWrite(flower.id);
 
     const { error } = await supabase.from('flowers').insert({
       id: flower.id,
