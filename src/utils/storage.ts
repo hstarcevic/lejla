@@ -67,6 +67,39 @@ async function setCachedPhoto(id: string, photo: string): Promise<void> {
   }
 }
 
+function base64ToBlob(base64: string): Blob {
+  const parts = base64.split(',');
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const binary = atob(parts[1]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+async function uploadPhoto(entryId: string, base64: string): Promise<string> {
+  const blob = base64ToBlob(base64);
+  const path = `${entryId}.jpg`;
+
+  const { error } = await supabase.storage
+    .from('photos')
+    .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+
+  if (error) {
+    logger.error('photo.upload', 'Failed to upload photo to Storage', { entryId, error: error.message });
+    // Fall back to base64 in DB if Storage upload fails
+    return base64;
+  }
+
+  const { data } = supabase.storage.from('photos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function deletePhoto(entryId: string): Promise<void> {
+  await supabase.storage.from('photos').remove([`${entryId}.jpg`]);
+}
+
 export const storage = {
   // Timeline - now using Supabase
   getCachedTimeline: (): TimelineEntry[] | null => {
@@ -194,12 +227,21 @@ export const storage = {
   addTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
     logger.info('timeline.add', 'Adding timeline entry', { id: entry.id, title: entry.title, hasPhoto: !!entry.photo });
 
+    let photoValue: string | null = null;
+    if (entry.photo) {
+      if (entry.photo.startsWith('data:')) {
+        photoValue = await uploadPhoto(entry.id, entry.photo);
+      } else {
+        photoValue = entry.photo;
+      }
+    }
+
     const { error } = await supabase.from('timeline_entries').insert({
       id: entry.id,
       date: entry.date,
       title: entry.title,
       description: entry.description,
-      photo: entry.photo || null,
+      photo: photoValue,
     });
 
     if (error) {
@@ -211,13 +253,22 @@ export const storage = {
   updateTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
     logger.info('timeline.update', 'Updating timeline entry', { id: entry.id, title: entry.title });
 
+    let photoValue: string | null = null;
+    if (entry.photo) {
+      if (entry.photo.startsWith('data:')) {
+        photoValue = await uploadPhoto(entry.id, entry.photo);
+      } else {
+        photoValue = entry.photo;
+      }
+    }
+
     const { error } = await supabase
       .from('timeline_entries')
       .update({
         date: entry.date,
         title: entry.title,
         description: entry.description,
-        photo: entry.photo || null,
+        photo: photoValue,
       })
       .eq('id', entry.id);
 
@@ -231,6 +282,8 @@ export const storage = {
     logger.info('timeline.delete', 'Deleting timeline entry', { id });
 
     const { error } = await supabase.from('timeline_entries').delete().eq('id', id);
+    // Also clean up photo from Storage (ignore errors)
+    deletePhoto(id);
 
     if (error) {
       logger.error('timeline.delete', 'Failed to delete timeline entry', { id, error: error.message, code: error.code });

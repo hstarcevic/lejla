@@ -55,8 +55,8 @@ export default function PasswordGate({ onAuthenticate, hasExistingPassword }: Pa
           >
             <Heart className="w-16 h-16 text-primary-400 mx-auto" fill="currentColor" />
           </motion.div>
-          <h1 className="font-serif text-3xl text-primary-600 mt-4">Lejla & Hamza ❤️</h1>
-          <p className="text-primary-400 mt-2">
+          <h1 className="font-serif text-3xl text-primary-600 dark:text-primary-400 mt-4">Lejla & Hamza ❤️</h1>
+          <p className="text-primary-400 dark:text-primary-500 mt-2">
             {isSettingPassword ? 'Postavi lozinku za zaštitu uspomena' : 'Unesi lozinku za nastavak'}
           </p>
         </div>
@@ -69,7 +69,7 @@ export default function PasswordGate({ onAuthenticate, hasExistingPassword }: Pa
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isSettingPassword ? 'Kreiraj lozinku' : 'Lozinka'}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white/50"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 dark:border-gray-700 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-900 outline-none transition-all bg-white/50 dark:bg-gray-800/50 dark:text-white"
               autoFocus
             />
           </div>
@@ -82,7 +82,7 @@ export default function PasswordGate({ onAuthenticate, hasExistingPassword }: Pa
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Potvrdi lozinku"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white/50"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-primary-200 dark:border-gray-700 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-900 outline-none transition-all bg-white/50 dark:bg-gray-800/50 dark:text-white"
               />
             </div>
           )}
@@ -99,7 +99,7 @@ export default function PasswordGate({ onAuthenticate, hasExistingPassword }: Pa
 
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-primary-400 to-secondary-400 text-white rounded-xl font-medium hover:from-primary-500 hover:to-secondary-500 transition-all shadow-lg shadow-primary-200"
+            className="w-full py-3 bg-gradient-to-r from-primary-400 to-secondary-400 text-white rounded-xl font-medium hover:from-primary-500 hover:to-secondary-500 transition-all shadow-lg shadow-primary-200 dark:shadow-primary-900/30"
           >
             {isSettingPassword ? 'Postavi lozinku' : 'Uđi'}
           </button>

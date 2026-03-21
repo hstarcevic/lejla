@@ -15,7 +15,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-primary-100 px-4 py-2 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-primary-100 dark:border-gray-800 px-4 py-2 z-50">
       <div className="flex justify-around items-center max-w-md mx-auto">
         {items.map(({ id, icon: Icon, label }) => (
           <button
@@ -26,18 +26,18 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
             {currentPage === id && (
               <motion.div
                 layoutId="nav-indicator"
-                className="absolute inset-0 bg-primary-100 rounded-xl"
+                className="absolute inset-0 bg-primary-100 dark:bg-primary-900/30 rounded-xl"
                 transition={{ type: 'spring', duration: 0.5 }}
               />
             )}
             <Icon
               className={`relative w-6 h-6 transition-colors ${
-                currentPage === id ? 'text-primary-500' : 'text-gray-400'
+                currentPage === id ? 'text-primary-500' : 'text-gray-400 dark:text-gray-500'
               }`}
             />
             <span
               className={`relative text-xs mt-1 transition-colors ${
-                currentPage === id ? 'text-primary-500 font-medium' : 'text-gray-400'
+                currentPage === id ? 'text-primary-500 font-medium' : 'text-gray-400 dark:text-gray-500'
               }`}
             >
               {label}

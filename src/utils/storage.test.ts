@@ -21,8 +21,17 @@ const { mockChain, mockFrom, mockLogger } = vi.hoisted(() => {
   return { mockChain, mockFrom, mockLogger };
 });
 
+const mockStorageBucket = {
+  upload: vi.fn().mockResolvedValue({ error: null }),
+  getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: 'https://storage.test/photo.jpg' } }),
+  remove: vi.fn().mockResolvedValue({ error: null }),
+};
+
 vi.mock('../lib/supabase', () => ({
-  supabase: { from: mockFrom },
+  supabase: {
+    from: mockFrom,
+    storage: { from: () => mockStorageBucket },
+  },
 }));
 
 vi.mock('./logger', () => ({
@@ -103,7 +112,7 @@ describe('storage - Timeline CRUD', () => {
       date: '2024-01-01',
       title: 'Test',
       description: 'desc',
-      photo: 'data:image/jpeg;base64,abc',
+      photo: 'https://storage.test/photo.jpg',
     });
     expect(mockLogger.info).toHaveBeenCalledWith('timeline.add', expect.any(String), expect.objectContaining({ id: 'entry-1' }));
   });
@@ -122,7 +131,7 @@ describe('storage - Timeline CRUD', () => {
       date: '2024-01-01',
       title: 'Test',
       description: 'desc',
-      photo: 'data:image/jpeg;base64,abc',
+      photo: 'https://storage.test/photo.jpg',
     });
     expect(mockChain.eq).toHaveBeenCalledWith('id', 'entry-1');
   });

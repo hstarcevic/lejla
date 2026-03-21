@@ -61,7 +61,7 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 - Show offline indicator in the header
 
 ### Photo Improvements
-- Show compression/upload progress indicator
+- ~~Show compression/upload progress indicator~~ ✅
 - Allow cropping/rotating before upload
 - Support multiple photos per timeline entry
 - ~~Tap photo to view fullscreen with pinch-to-zoom~~ ✅
@@ -79,7 +79,6 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 
 ### Letters UX
 - ~~Envelope opening animation when reading for the first time~~ ✅
-- Schedule a letter to "arrive" on a future date
 - Rich text or at least basic formatting (bold, italic)
 
 ### Garden UX
@@ -89,19 +88,18 @@ Based on similar couple apps (Between, Coupled, Paired, Lovedays) and gaps in th
 - Seasonal themes (snow in winter, leaves in fall)
 
 ### General Polish
-- Dark mode
+- ~~Dark mode~~ ✅
 - ~~Pull-to-refresh on mobile~~ ✅
 - ~~Haptic feedback on interactions (vibration API)~~ ✅
 - ~~Loading skeletons instead of spinners~~ ✅
-- Page transition animations between tabs (already partially done)
+- ~~Page transition animations between tabs (already partially done)~~ ✅
 - ~~Confirmation dialog before deleting entries ("Jesi li siguran/na?")~~ ✅
 
 ### Performance
 - ~~Paginate timeline/letters fetch instead of loading all at once~~ ✅
-- Move photos to Supabase Storage (object storage) instead of base64 in the DB column — much better for large datasets
+- ~~Move photos to Supabase Storage (object storage) instead of base64 in the DB column~~ ✅
 - Add `updated_at` columns to enable incremental sync instead of full refetch
 
 ### Developer Experience
-- CI pipeline: run `npm test` and `npm run build` on push
 - E2E tests with Playwright for critical flows (login, add entry, add letter)
 - Seed script to populate dev database with sample data

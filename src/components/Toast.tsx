@@ -57,10 +57,10 @@ export default function ToastContainer() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="pointer-events-auto w-full max-w-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3 shadow-lg flex items-start gap-3"
+            className="pointer-events-auto w-full max-w-sm bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 shadow-lg flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700 flex-1">{toast.message}</p>
+            <p className="text-sm text-red-700 dark:text-red-300 flex-1">{toast.message}</p>
             <div className="flex gap-1 shrink-0">
               {toast.onRetry && (
                 <button
@@ -68,7 +68,7 @@ export default function ToastContainer() {
                     dismissToast(toast.id);
                     toast.onRetry?.();
                   }}
-                  className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                  className="p-1 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
                   title="Pokušaj ponovo"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -76,7 +76,7 @@ export default function ToastContainer() {
               )}
               <button
                 onClick={() => dismissToast(toast.id)}
-                className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                className="p-1 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>

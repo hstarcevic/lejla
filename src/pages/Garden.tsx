@@ -90,12 +90,7 @@ export default function Garden() {
   };
 
   return (
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <div ref={containerRef}>
       {(pullDistance > 0 || isRefreshing) && (
         <div
           className="flex justify-center overflow-hidden transition-all"
@@ -115,13 +110,13 @@ export default function Garden() {
       />
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <h2 className="font-serif text-xl text-primary-600">Bašta ljubavi</h2>
+          <h2 className="font-serif text-xl text-primary-600 dark:text-primary-400">Bašta ljubavi</h2>
           {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
         </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 text-sm bg-primary-100 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-200 transition-colors"
+            className="flex items-center gap-1 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-3 py-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Posadi
@@ -134,10 +129,10 @@ export default function Garden() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl p-4 shadow-lg shadow-primary-100 mb-6 space-y-3"
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg shadow-primary-100 dark:shadow-gray-900/50 mb-6 space-y-3"
         >
           <div>
-            <label className="block text-sm text-gray-600 mb-2">Vrsta cvijeta</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Vrsta cvijeta</label>
             <div className="flex gap-2 justify-center">
               {(Object.keys(flowerEmojis) as Flower['type'][]).map((type) => (
                 <button
@@ -146,8 +141,8 @@ export default function Garden() {
                   onClick={() => setFormData((prev) => ({ ...prev, type }))}
                   className={`text-2xl p-2 rounded-lg transition-all ${
                     formData.type === type
-                      ? 'bg-primary-100 scale-110'
-                      : 'hover:bg-gray-100'
+                      ? 'bg-primary-100 dark:bg-primary-900/40 scale-110'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   {flowerEmojis[type]}
@@ -156,13 +151,13 @@ export default function Garden() {
             </div>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Poruka</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Poruka</label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData((prev) => ({ ...prev, message: e.target.value }))}
               placeholder="Razlog zašto te volim..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none resize-none bg-white dark:bg-gray-800 dark:text-white"
               required
             />
           </div>
@@ -170,7 +165,7 @@ export default function Garden() {
             <button
               type="button"
               onClick={resetForm}
-              className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+              className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-4 h-4 mx-auto" />
             </button>
@@ -188,7 +183,7 @@ export default function Garden() {
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="aspect-square flex items-center justify-center animate-pulse">
-              <div className="w-8 h-8 rounded-full bg-primary-100" />
+              <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-gray-700" />
             </div>
           ))}
         </div>
@@ -255,22 +250,22 @@ export default function Garden() {
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 180 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             >
               <span className="text-5xl block mb-4">
                 {flowerEmojis[selectedFlower.type]}
               </span>
-              <p className="text-gray-600 mb-4">{selectedFlower.message}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">{selectedFlower.message}</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleDelete(selectedFlower.id)}
-                  className="flex-1 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex-1 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 >
                   Obriši
                 </button>
                 <button
                   onClick={() => setSelectedFlower(null)}
-                  className="flex-1 py-2 text-sm bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors"
+                  className="flex-1 py-2 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
                 >
                   Zatvori
                 </button>
@@ -279,6 +274,6 @@ export default function Garden() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

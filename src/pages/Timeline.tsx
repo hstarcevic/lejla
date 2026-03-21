@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Calendar, Trash2, Edit2, X, Check, Image, ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { TimelineEntry } from '../types';
 import { useTimeline } from '../hooks/useLocalStorage';
 import { generateId, storage } from '../utils/storage';
@@ -51,8 +51,8 @@ function TimelineCard({ entry, index, onEdit, onDelete, onPhotoClick }: {
       transition={{ delay: staggerDelay }}
       className="relative pl-10"
     >
-      <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-400 border-2 border-white shadow" />
-      <div className="bg-white rounded-xl p-4 shadow-md shadow-primary-50">
+      <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-400 border-2 border-white dark:border-gray-900 shadow" />
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md shadow-primary-50 dark:shadow-gray-900/50">
         <div className="flex justify-between items-start mb-2">
           <div>
             <p className="text-xs text-primary-400">
@@ -62,7 +62,7 @@ function TimelineCard({ entry, index, onEdit, onDelete, onPhotoClick }: {
                 day: 'numeric',
               })}
             </p>
-            <h3 className="font-serif text-lg text-primary-600">{entry.title}</h3>
+            <h3 className="font-serif text-lg text-primary-600 dark:text-primary-400">{entry.title}</h3>
           </div>
           <div className="flex gap-1">
             <button
@@ -80,7 +80,7 @@ function TimelineCard({ entry, index, onEdit, onDelete, onPhotoClick }: {
           </div>
         </div>
         {photoLoading && (
-          <div className="w-full h-48 rounded-lg mb-2 bg-primary-50 animate-pulse" />
+          <div className="w-full h-48 rounded-lg mb-2 bg-primary-50 dark:bg-gray-700 animate-pulse" />
         )}
         {photo && (
           <img
@@ -91,7 +91,7 @@ function TimelineCard({ entry, index, onEdit, onDelete, onPhotoClick }: {
           />
         )}
         {entry.description && (
-          <p className="text-sm text-gray-600 leading-relaxed">{entry.description}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{entry.description}</p>
         )}
       </div>
     </motion.div>
@@ -105,6 +105,8 @@ export default function Timeline() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [photoStatus, setPhotoStatus] = useState<null | 'compressing' | 'ready'>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
     title: '',
@@ -141,12 +143,14 @@ export default function Timeline() {
     setFormData({ date: '', title: '', description: '', photo: '' });
     setIsAdding(false);
     setEditingId(null);
+    setPhotoStatus(null);
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setPhotoStatus('compressing');
     const img = new window.Image();
     img.onload = () => {
       const MAX_DIM = 1200;
@@ -162,6 +166,7 @@ export default function Timeline() {
       canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
       const compressed = canvas.toDataURL('image/jpeg', 0.7);
       setFormData((prev) => ({ ...prev, photo: compressed }));
+      setPhotoStatus('ready');
       URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(file);
@@ -171,19 +176,24 @@ export default function Timeline() {
     e.preventDefault();
     if (!formData.date || !formData.title) return;
 
-    if (editingId) {
-      await updateEntry({
-        id: editingId,
-        ...formData,
-      });
-    } else {
-      const newEntry: TimelineEntry = {
-        id: generateId(),
-        ...formData,
-      };
-      await addEntry(newEntry);
+    setIsSubmitting(true);
+    try {
+      if (editingId) {
+        await updateEntry({
+          id: editingId,
+          ...formData,
+        });
+      } else {
+        const newEntry: TimelineEntry = {
+          id: generateId(),
+          ...formData,
+        };
+        await addEntry(newEntry);
+      }
+      resetForm();
+    } finally {
+      setIsSubmitting(false);
     }
-    resetForm();
   };
 
   const handleEdit = (entry: TimelineEntry) => {
@@ -195,6 +205,7 @@ export default function Timeline() {
     });
     setEditingId(entry.id);
     setIsAdding(true);
+    setPhotoStatus(entry.photo ? 'ready' : null);
   };
 
   const handleDelete = (id: string) => {
@@ -210,12 +221,7 @@ export default function Timeline() {
   };
 
   return (
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <div ref={containerRef}>
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div
@@ -236,13 +242,13 @@ export default function Timeline() {
       />
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="font-serif text-xl text-primary-600">Naša priča</h2>
+          <h2 className="font-serif text-xl text-primary-600 dark:text-primary-400">Naša priča</h2>
           {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
         </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 text-sm bg-primary-100 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-200 transition-colors"
+            className="flex items-center gap-1 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-3 py-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Dodaj
@@ -258,7 +264,7 @@ export default function Timeline() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Pretraži uspomene..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none bg-white dark:bg-gray-800 dark:text-white"
           />
         </div>
       )}
@@ -268,51 +274,61 @@ export default function Timeline() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl p-4 shadow-lg shadow-primary-100 mb-6 space-y-3"
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg shadow-primary-100 dark:shadow-gray-900/50 mb-6 space-y-3"
         >
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Datum</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Datum</label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none bg-white dark:bg-gray-800 dark:text-white"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Naslov</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Naslov</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Prvi dejt, Prvi poljubac..."
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none bg-white dark:bg-gray-800 dark:text-white"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Opis</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Opis</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Ispričaj priču..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none resize-none bg-white dark:bg-gray-800 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Slika</label>
-            <label className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed border-primary-300 cursor-pointer hover:bg-primary-50 transition-colors">
-              <Image className="w-5 h-5 text-primary-400" />
-              <span className="text-sm text-primary-500">
-                {formData.photo ? 'Promijeni sliku' : 'Dodaj sliku'}
-              </span>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Slika</label>
+            <label className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed border-primary-300 dark:border-gray-600 cursor-pointer hover:bg-primary-50 dark:hover:bg-gray-700 transition-colors">
+              {photoStatus === 'compressing' ? (
+                <>
+                  <Loader2 className="w-5 h-5 text-primary-400 animate-spin" />
+                  <span className="text-sm text-primary-500">Kompresija...</span>
+                </>
+              ) : (
+                <>
+                  <Image className="w-5 h-5 text-primary-400" />
+                  <span className="text-sm text-primary-500">
+                    {formData.photo ? 'Promijeni sliku' : 'Dodaj sliku'}
+                  </span>
+                </>
+              )}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoUpload}
                 className="hidden"
+                disabled={photoStatus === 'compressing'}
               />
             </label>
             {formData.photo && (
@@ -327,15 +343,24 @@ export default function Timeline() {
             <button
               type="button"
               onClick={resetForm}
-              className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+              disabled={isSubmitting}
+              className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
             >
               <X className="w-4 h-4 mx-auto" />
             </button>
             <button
               type="submit"
-              className="flex-1 py-2 bg-primary-400 text-white rounded-lg hover:bg-primary-500"
+              disabled={isSubmitting}
+              className="flex-1 py-2 bg-primary-400 text-white rounded-lg hover:bg-primary-500 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4 mx-auto" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">{formData.photo ? 'Slanje...' : 'Čuvanje...'}</span>
+                </>
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
             </button>
           </div>
         </motion.form>
@@ -343,18 +368,18 @@ export default function Timeline() {
 
       {isLoading ? (
         <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-100 to-secondary-100" />
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-100 dark:from-gray-700 to-secondary-100 dark:to-gray-800" />
           <div className="space-y-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="relative pl-10 animate-pulse">
-                <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-200" />
-                <div className="bg-white rounded-xl p-4 shadow-md shadow-primary-50">
-                  <div className="h-3 w-24 bg-primary-100 rounded mb-2" />
-                  <div className="h-5 w-40 bg-primary-100 rounded mb-3" />
-                  <div className="w-full h-48 bg-primary-50 rounded-lg mb-2" />
+                <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-primary-200 dark:bg-gray-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md shadow-primary-50 dark:shadow-gray-900/50">
+                  <div className="h-3 w-24 bg-primary-100 dark:bg-gray-700 rounded mb-2" />
+                  <div className="h-5 w-40 bg-primary-100 dark:bg-gray-700 rounded mb-3" />
+                  <div className="w-full h-48 bg-primary-50 dark:bg-gray-700 rounded-lg mb-2" />
                   <div className="space-y-2">
-                    <div className="h-3 w-full bg-gray-100 rounded" />
-                    <div className="h-3 w-3/4 bg-gray-100 rounded" />
+                    <div className="h-3 w-full bg-gray-100 dark:bg-gray-700 rounded" />
+                    <div className="h-3 w-3/4 bg-gray-100 dark:bg-gray-700 rounded" />
                   </div>
                 </div>
               </div>
@@ -376,7 +401,7 @@ export default function Timeline() {
         <>
           <div className="relative">
             {/* Timeline line */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 to-secondary-300" />
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 dark:from-primary-800 to-secondary-300 dark:to-secondary-800" />
 
             <div className="space-y-6">
               {groupedEntries.map((group) => (
@@ -405,7 +430,7 @@ export default function Timeline() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+                className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -415,7 +440,7 @@ export default function Timeline() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+                className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -451,6 +476,6 @@ export default function Timeline() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

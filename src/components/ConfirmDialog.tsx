@@ -23,13 +23,13 @@ export default function ConfirmDialog({ isOpen, message, onConfirm, onCancel }: 
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl"
+            className="bg-white dark:bg-gray-800 rounded-2xl p-5 max-w-xs w-full text-center shadow-2xl"
           >
-            <p className="text-gray-700 mb-4">{message}</p>
+            <p className="text-gray-700 dark:text-gray-200 mb-4">{message}</p>
             <div className="flex gap-2">
               <button
                 onClick={onCancel}
-                className="flex-1 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Ne
               </button>

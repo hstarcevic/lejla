@@ -62,6 +62,20 @@ CREATE POLICY "Allow all operations on app_logs" ON app_logs FOR ALL USING (true
 CREATE INDEX IF NOT EXISTS idx_app_logs_created_at ON app_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_app_logs_level ON app_logs(level);
 
+-- Storage bucket for photos (moved from base64 in DB to object storage)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('photos', 'photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Public photo read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'photos');
+CREATE POLICY "Public photo insert" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'photos');
+CREATE POLICY "Public photo update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'photos') WITH CHECK (bucket_id = 'photos');
+CREATE POLICY "Public photo delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'photos');
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_timeline_entries_date ON timeline_entries(date);
 CREATE INDEX IF NOT EXISTS idx_letters_created_at ON letters(created_at);

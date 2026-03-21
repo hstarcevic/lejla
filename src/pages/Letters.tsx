@@ -61,12 +61,7 @@ export default function Letters() {
   };
 
   return (
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <div ref={containerRef}>
       {(pullDistance > 0 || isRefreshing) && (
         <div
           className="flex justify-center overflow-hidden transition-all"
@@ -86,13 +81,13 @@ export default function Letters() {
       />
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <h2 className="font-serif text-xl text-primary-600">Ljubavna pisma</h2>
+          <h2 className="font-serif text-xl text-primary-600 dark:text-primary-400">Ljubavna pisma</h2>
           {isSyncing && <div className="w-1.5 h-1.5 rounded-full bg-primary-300 animate-pulse" />}
         </div>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 text-sm bg-primary-100 text-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-200 transition-colors"
+            className="flex items-center gap-1 text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-3 py-1.5 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Dodaj
@@ -105,27 +100,27 @@ export default function Letters() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl p-4 shadow-lg shadow-primary-100 mb-6 space-y-3"
+          className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg shadow-primary-100 dark:shadow-gray-900/50 mb-6 space-y-3"
         >
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Naslov</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Naslov</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Pismo za tebe..."
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none bg-white dark:bg-gray-800 dark:text-white"
               required
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Sadržaj</label>
+            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Sadržaj</label>
             <textarea
               value={formData.content}
               onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
               placeholder="Piši od srca..."
               rows={6}
-              className="w-full px-3 py-2 rounded-lg border border-primary-200 focus:border-primary-400 outline-none resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-primary-200 dark:border-gray-700 focus:border-primary-400 outline-none resize-none bg-white dark:bg-gray-800 dark:text-white"
               required
             />
           </div>
@@ -133,7 +128,7 @@ export default function Letters() {
             <button
               type="button"
               onClick={resetForm}
-              className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+              className="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-4 h-4 mx-auto" />
             </button>
@@ -150,10 +145,10 @@ export default function Letters() {
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl p-4 shadow-md shadow-primary-50 animate-pulse">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md shadow-primary-50 dark:shadow-gray-900/50 animate-pulse">
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 bg-primary-100 rounded mb-2" />
-                <div className="h-4 w-20 bg-primary-100 rounded" />
+                <div className="w-8 h-8 bg-primary-100 dark:bg-gray-700 rounded mb-2" />
+                <div className="h-4 w-20 bg-primary-100 dark:bg-gray-700 rounded" />
               </div>
             </div>
           ))}
@@ -174,7 +169,7 @@ export default function Letters() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: Math.min(index * 0.05, 0.3) }}
                 onClick={() => handleOpen(letter)}
-                className="relative bg-white rounded-xl p-4 shadow-md shadow-primary-50 cursor-pointer hover:shadow-lg transition-shadow"
+                className="relative bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md shadow-primary-50 dark:shadow-gray-900/50 cursor-pointer hover:shadow-lg transition-shadow"
               >
                 <button
                   onClick={(e) => handleDelete(letter.id, e)}
@@ -193,7 +188,7 @@ export default function Letters() {
                       <Mail className="w-8 h-8 text-primary-400 mb-2" />
                     </motion.div>
                   )}
-                  <h3 className="font-medium text-sm text-primary-600 line-clamp-2">
+                  <h3 className="font-medium text-sm text-primary-600 dark:text-primary-400 line-clamp-2">
                     {letter.title}
                   </h3>
                 </div>
@@ -206,7 +201,7 @@ export default function Letters() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+                className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -216,7 +211,7 @@ export default function Letters() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="p-2 rounded-lg bg-primary-100 text-primary-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 transition-colors"
+                className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -241,7 +236,7 @@ export default function Letters() {
               exit={{ scale: 0.9, y: 20 }}
               transition={isFirstOpen ? { type: 'spring', stiffness: 200, damping: 20 } : undefined}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 max-w-sm w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full max-h-[80vh] overflow-y-auto shadow-2xl"
               style={{ perspective: 800 }}
             >
               {isFirstOpen && (
@@ -260,15 +255,15 @@ export default function Letters() {
                 transition={isFirstOpen ? { delay: 0.5 } : undefined}
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-serif text-xl text-primary-600">{selectedLetter.title}</h3>
+                  <h3 className="font-serif text-xl text-primary-600 dark:text-primary-400">{selectedLetter.title}</h3>
                   <button
                     onClick={() => setSelectedLetter(null)}
-                    className="p-1 text-gray-400 hover:text-gray-600"
+                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">
+                <div className="prose prose-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                   {selectedLetter.content}
                 </div>
               </motion.div>
@@ -276,6 +271,6 @@ export default function Letters() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

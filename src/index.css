@@ -9,7 +9,13 @@
 body {
   margin: 0;
   min-height: 100vh;
+  color-scheme: light;
   background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 50%, #f3e8ff 100%);
+}
+
+html.dark body {
+  color-scheme: dark;
+  background: linear-gradient(135deg, #1e1b2e 0%, #1a1625 50%, #1e1b2e 100%);
 }
 
 #root {
@@ -32,4 +38,16 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #f472b6;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #1e1b2e;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #6b21a8;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
 }
