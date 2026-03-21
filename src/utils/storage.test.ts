@@ -9,6 +9,7 @@ const { mockChain, mockFrom, mockLogger } = vi.hoisted(() => {
     eq: vi.fn(),
     neq: vi.fn(),
     not: vi.fn(),
+    gt: vi.fn(),
     order: vi.fn(),
     limit: vi.fn(),
     single: vi.fn(),
@@ -40,7 +41,7 @@ vi.mock('./logger', () => ({
 
 import { storage, generateId } from './storage';
 
-const MOCK_KEYS = ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'not', 'order', 'limit', 'single'];
+const MOCK_KEYS = ['select', 'insert', 'update', 'delete', 'eq', 'neq', 'not', 'gt', 'order', 'limit', 'single'];
 
 function resetChain() {
   delete (mockChain as Record<string, unknown>).then;
@@ -298,17 +299,35 @@ describe('storage - Caching', () => {
     expect(storage.getCachedFlowers()).toBeNull();
   });
 
-  it('getTimeline caches results in localStorage', async () => {
+  it('syncTimeline caches results in localStorage', async () => {
     const entries = [{ id: '1', date: '2024-01-01', title: 'T', description: '' }];
     resolveChain(entries, null);
-    await storage.getTimeline();
+    await storage.syncTimeline();
     expect(localStorage.setItem).toHaveBeenCalled();
   });
 
-  it('getTimeline falls back to cache on error', async () => {
-    localStorage.setItem('lejla_cache_timeline', JSON.stringify([{ id: 'cached' }]));
+  it('syncTimeline falls back to cache on error', async () => {
+    localStorage.setItem('lejla_cache_timeline', JSON.stringify({ data: [{ id: 'cached' }], lastSyncTime: '2024-01-01T00:00:00Z' }));
     resolveChain(null, { message: 'network error', code: '' });
-    const result = await storage.getTimeline();
+    const result = await storage.syncTimeline();
     expect(result).toEqual([{ id: 'cached' }]);
+  });
+
+  it('getCachedTimeline reads old plain-array cache format', () => {
+    localStorage.setItem('lejla_cache_timeline', JSON.stringify([{ id: '1' }]));
+    expect(storage.getCachedTimeline()).toEqual([{ id: '1' }]);
+  });
+
+  it('syncTimeline uses cache when no changes detected', async () => {
+    const cached = [{ id: '1', date: '2024-01-01', title: 'T', description: '', hasPhoto: false }];
+    const syncTime = '2024-06-01T00:00:00Z';
+    localStorage.setItem('lejla_cache_timeline', JSON.stringify({ data: cached, lastSyncTime: syncTime }));
+
+    // Metadata query returns same ID with older updated_at
+    resolveChain([{ id: '1', updated_at: '2024-05-01T00:00:00Z' }], null);
+    const result = await storage.syncTimeline();
+    expect(result).toEqual(cached);
+    // Should NOT have called select for the delta (only metadata query)
+    expect(mockChain.gt).not.toHaveBeenCalled();
   });
 });

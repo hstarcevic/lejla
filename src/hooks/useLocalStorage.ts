@@ -2,41 +2,41 @@ import { useState, useEffect } from 'react';
 import { TimelineEntry, Letter, Flower } from '../types';
 import { storage } from '../utils/storage';
 import { logger } from '../utils/logger';
-import { showToast } from '../components/Toast';
+import { showToast, showSuccessToast } from '../components/Toast';
 
 const TIMELINE_PAGE_SIZE = 20;
 
 export function useTimeline() {
-  const [entries, setEntries] = useState<TimelineEntry[]>(() => storage.getCachedTimeline() || []);
+  const [allEntries, setAllEntries] = useState<TimelineEntry[]>(() => storage.getCachedTimeline() || []);
   const [isLoading, setIsLoading] = useState(() => !storage.getCachedTimeline());
   const [isSyncing, setIsSyncing] = useState(false);
   const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadEntries();
-  }, [page]);
+  }, []);
 
   const loadEntries = async () => {
-    const hasCache = entries.length > 0;
+    const hasCache = allEntries.length > 0;
     if (!hasCache) setIsLoading(true);
     if (hasCache) setIsSyncing(true);
-    const result = await storage.getTimelinePage(page, TIMELINE_PAGE_SIZE);
-    setEntries(result.data);
-    setTotalCount(result.total);
+    const synced = await storage.syncTimeline();
+    setAllEntries(synced);
     setIsLoading(false);
     setIsSyncing(false);
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / TIMELINE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(allEntries.length / TIMELINE_PAGE_SIZE));
+  const entries = allEntries.slice(page * TIMELINE_PAGE_SIZE, (page + 1) * TIMELINE_PAGE_SIZE);
 
   const addEntry = async (entry: TimelineEntry) => {
-    setEntries(prev => [...prev, entry].sort((a, b) =>
+    setAllEntries(prev => [...prev, entry].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     ));
 
     try {
       await storage.addTimelineEntry(entry);
+      showSuccessToast('Uspomena sačuvana!');
     } catch (error) {
       logger.error('hook.timeline.add', 'Optimistic add failed, reverting', { id: entry.id, error: String(error) });
       await loadEntries();
@@ -45,7 +45,7 @@ export function useTimeline() {
   };
 
   const updateEntry = async (entry: TimelineEntry) => {
-    setEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
+    setAllEntries(prev => prev.map(e => e.id === entry.id ? entry : e));
 
     try {
       await storage.updateTimelineEntry(entry);
@@ -57,7 +57,7 @@ export function useTimeline() {
   };
 
   const deleteEntry = async (id: string) => {
-    setEntries(prev => prev.filter(e => e.id !== id));
+    setAllEntries(prev => prev.filter(e => e.id !== id));
 
     try {
       await storage.deleteTimelineEntry(id);
@@ -74,31 +74,30 @@ export function useTimeline() {
 const LETTERS_PAGE_SIZE = 20;
 
 export function useLetters() {
-  const [letters, setLetters] = useState<Letter[]>(() => storage.getCachedLetters() || []);
+  const [allLetters, setAllLetters] = useState<Letter[]>(() => storage.getCachedLetters() || []);
   const [isLoading, setIsLoading] = useState(() => !storage.getCachedLetters());
   const [isSyncing, setIsSyncing] = useState(false);
   const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadLetters();
-  }, [page]);
+  }, []);
 
   const loadLetters = async () => {
-    const hasCache = letters.length > 0;
+    const hasCache = allLetters.length > 0;
     if (!hasCache) setIsLoading(true);
     if (hasCache) setIsSyncing(true);
-    const result = await storage.getLettersPage(page, LETTERS_PAGE_SIZE);
-    setLetters(result.data);
-    setTotalCount(result.total);
+    const synced = await storage.syncLetters();
+    setAllLetters(synced);
     setIsLoading(false);
     setIsSyncing(false);
   };
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / LETTERS_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(allLetters.length / LETTERS_PAGE_SIZE));
+  const letters = allLetters.slice(page * LETTERS_PAGE_SIZE, (page + 1) * LETTERS_PAGE_SIZE);
 
   const addLetter = async (letter: Letter) => {
-    setLetters(prev => [letter, ...prev]);
+    setAllLetters(prev => [letter, ...prev]);
 
     try {
       await storage.addLetter(letter);
@@ -110,7 +109,7 @@ export function useLetters() {
   };
 
   const updateLetter = async (letter: Letter) => {
-    setLetters(prev => prev.map(l => l.id === letter.id ? letter : l));
+    setAllLetters(prev => prev.map(l => l.id === letter.id ? letter : l));
 
     try {
       await storage.updateLetter(letter);
@@ -122,7 +121,7 @@ export function useLetters() {
   };
 
   const deleteLetter = async (id: string) => {
-    setLetters(prev => prev.filter(l => l.id !== id));
+    setAllLetters(prev => prev.filter(l => l.id !== id));
 
     try {
       await storage.deleteLetter(id);
@@ -149,7 +148,7 @@ export function useFlowers() {
     const hasCache = flowers.length > 0;
     if (!hasCache) setIsLoading(true);
     if (hasCache) setIsSyncing(true);
-    const data = await storage.getFlowers();
+    const data = await storage.syncFlowers();
     setFlowers(data);
     setIsLoading(false);
     setIsSyncing(false);

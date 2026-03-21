@@ -21,6 +21,7 @@ export interface Database {
           description: string;
           photo: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -29,6 +30,7 @@ export interface Database {
           description: string;
           photo?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -37,6 +39,7 @@ export interface Database {
           description?: string;
           photo?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
       };
       letters: {
@@ -46,6 +49,7 @@ export interface Database {
           content: string;
           is_opened: boolean;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -53,6 +57,7 @@ export interface Database {
           content: string;
           is_opened?: boolean;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -60,6 +65,7 @@ export interface Database {
           content?: string;
           is_opened?: boolean;
           created_at?: string;
+          updated_at?: string;
         };
       };
       flowers: {
@@ -69,6 +75,7 @@ export interface Database {
           is_bloomed: boolean;
           type: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -76,6 +83,7 @@ export interface Database {
           is_bloomed?: boolean;
           type: string;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -83,6 +91,7 @@ export interface Database {
           is_bloomed?: boolean;
           type?: string;
           created_at?: string;
+          updated_at?: string;
         };
       };
       app_settings: {

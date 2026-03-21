@@ -10,22 +10,37 @@ const CACHE_TIMELINE = 'lejla_cache_timeline';
 const CACHE_LETTERS = 'lejla_cache_letters';
 const CACHE_FLOWERS = 'lejla_cache_flowers';
 
-function getCache<T>(key: string): T | null {
+interface SyncCache<T> {
+  data: T[];
+  lastSyncTime: string;
+}
+
+function getSyncCache<T>(key: string): SyncCache<T> | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw);
+    // Handle old cache format (plain array) — treat as no lastSyncTime
+    if (Array.isArray(parsed)) {
+      return { data: parsed as T[], lastSyncTime: '' };
+    }
+    return parsed as SyncCache<T>;
   } catch {
     return null;
   }
 }
 
-function setCache<T>(key: string, data: T): void {
+function setSyncCache<T>(key: string, data: T[], lastSyncTime: string): void {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify({ data, lastSyncTime }));
   } catch {
     // localStorage full or unavailable — ignore
   }
+}
+
+function getCachedData<T>(key: string): T[] | null {
+  const cache = getSyncCache<T>(key);
+  return cache ? cache.data : null;
 }
 
 // IndexedDB photo cache (much larger storage than localStorage)
@@ -101,12 +116,79 @@ async function deletePhoto(entryId: string): Promise<void> {
 }
 
 export const storage = {
-  // Timeline - now using Supabase
+  // Timeline - incremental sync
   getCachedTimeline: (): TimelineEntry[] | null => {
-    return getCache<TimelineEntry[]>(CACHE_TIMELINE);
+    return getCachedData<TimelineEntry>(CACHE_TIMELINE);
   },
 
-  getTimeline: async (): Promise<TimelineEntry[]> => {
+  syncTimeline: async (): Promise<TimelineEntry[]> => {
+    const cache = getSyncCache<TimelineEntry>(CACHE_TIMELINE);
+
+    if (cache && cache.lastSyncTime) {
+      // Fetch lightweight metadata: all IDs + updated_at
+      const { data: meta, error: metaError } = await supabase
+        .from('timeline_entries')
+        .select('id, updated_at');
+
+      if (metaError) {
+        logger.error('timeline.sync.meta', 'Failed to fetch metadata', { error: metaError.message });
+        return cache.data;
+      }
+
+      const currentIds = new Set((meta || []).map((r) => r.id));
+      const maxUpdatedAt = (meta || []).reduce((max, r) => r.updated_at > max ? r.updated_at : max, '');
+      const cachedIds = new Set(cache.data.map((e) => e.id));
+
+      // Nothing changed — return cache as-is
+      if (maxUpdatedAt <= cache.lastSyncTime && currentIds.size === cachedIds.size && [...currentIds].every((id) => cachedIds.has(id))) {
+        logger.info('timeline.sync', 'No changes detected, using cache', { cachedCount: cache.data.length });
+        return cache.data;
+      }
+
+      // Fetch only changed rows
+      const { data: delta, error: deltaError } = await supabase
+        .from('timeline_entries')
+        .select('id, date, title, description')
+        .gt('updated_at', cache.lastSyncTime);
+
+      if (deltaError) {
+        logger.error('timeline.sync.delta', 'Delta fetch failed, falling back to cache', { error: deltaError.message });
+        return cache.data;
+      }
+
+      // Fetch photo IDs for changed entries + any new entries
+      const { data: photoData } = await supabase
+        .from('timeline_entries')
+        .select('id')
+        .not('photo', 'is', null);
+      const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
+
+      // Build delta map
+      const deltaMap = new Map((delta || []).map((e) => [e.id, {
+        id: e.id, date: e.date, title: e.title, description: e.description,
+        hasPhoto: idsWithPhotos.has(e.id),
+      }]));
+
+      // Merge: keep cached entries that still exist, apply updates
+      let merged = cache.data
+        .filter((e) => currentIds.has(e.id))
+        .map((e) => deltaMap.get(e.id) || { ...e, hasPhoto: idsWithPhotos.has(e.id) });
+
+      // Add new entries (in delta but not in old cache)
+      const mergedIds = new Set(merged.map((e) => e.id));
+      for (const entry of deltaMap.values()) {
+        if (!mergedIds.has(entry.id)) merged.push(entry);
+      }
+
+      merged.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      const syncTime = new Date().toISOString();
+      setSyncCache(CACHE_TIMELINE, merged, syncTime);
+      logger.info('timeline.sync', 'Incremental sync complete', { deltaCount: delta?.length || 0, total: merged.length });
+      return merged;
+    }
+
+    // No cache or no lastSyncTime — full fetch
     const { data, error } = await supabase
       .from('timeline_entries')
       .select('id, date, title, description')
@@ -114,15 +196,13 @@ export const storage = {
 
     if (error) {
       logger.error('timeline.fetch', 'Failed to fetch timeline', { error: error.message, code: error.code });
-      return getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
+      return cache?.data || [];
     }
 
-    // Also check which entries have photos (without fetching the actual data)
     const { data: photoData } = await supabase
       .from('timeline_entries')
       .select('id')
       .not('photo', 'is', null);
-
     const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
 
     const entries = (data || []).map((entry) => ({
@@ -133,52 +213,9 @@ export const storage = {
       hasPhoto: idsWithPhotos.has(entry.id),
     }));
 
-    setCache(CACHE_TIMELINE, entries);
+    const syncTime = new Date().toISOString();
+    setSyncCache(CACHE_TIMELINE, entries, syncTime);
     return entries;
-  },
-
-  getTimelinePage: async (page: number, pageSize: number): Promise<{ data: TimelineEntry[]; total: number }> => {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    const { count, error: countError } = await supabase
-      .from('timeline_entries')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      logger.error('timeline.count', 'Failed to count timeline', { error: countError.message });
-      const cached = getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
-      return { data: cached.slice(from, to + 1), total: cached.length };
-    }
-
-    const { data, error } = await supabase
-      .from('timeline_entries')
-      .select('id, date, title, description')
-      .order('date', { ascending: true })
-      .range(from, to);
-
-    if (error) {
-      logger.error('timeline.fetch_page', 'Failed to fetch timeline page', { error: error.message, page });
-      const cached = getCache<TimelineEntry[]>(CACHE_TIMELINE) || [];
-      return { data: cached.slice(from, to + 1), total: cached.length };
-    }
-
-    const { data: photoData } = await supabase
-      .from('timeline_entries')
-      .select('id')
-      .not('photo', 'is', null);
-
-    const idsWithPhotos = new Set((photoData || []).map((p) => p.id));
-
-    const entries = (data || []).map((entry) => ({
-      id: entry.id,
-      date: entry.date,
-      title: entry.title,
-      description: entry.description,
-      hasPhoto: idsWithPhotos.has(entry.id),
-    }));
-
-    return { data: entries, total: count || 0 };
   },
 
   getTimelineEntryPhoto: async (id: string): Promise<string | undefined> => {
@@ -200,28 +237,6 @@ export const storage = {
     }
 
     return photo;
-  },
-
-  setTimeline: async (entries: TimelineEntry[]): Promise<void> => {
-    // Delete all existing entries
-    await supabase.from('timeline_entries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-    // Insert new entries
-    if (entries.length > 0) {
-      const { error } = await supabase.from('timeline_entries').insert(
-        entries.map((entry) => ({
-          id: entry.id,
-          date: entry.date,
-          title: entry.title,
-          description: entry.description,
-          photo: entry.photo || null,
-        }))
-      );
-
-      if (error) {
-        logger.error('timeline.set', 'Failed to save timeline', { error: error.message, code: error.code });
-      }
-    }
   },
 
   addTimelineEntry: async (entry: TimelineEntry): Promise<void> => {
@@ -291,12 +306,66 @@ export const storage = {
     }
   },
 
-  // Letters - now using Supabase
+  // Letters - incremental sync
   getCachedLetters: (): Letter[] | null => {
-    return getCache<Letter[]>(CACHE_LETTERS);
+    return getCachedData<Letter>(CACHE_LETTERS);
   },
 
-  getLetters: async (): Promise<Letter[]> => {
+  syncLetters: async (): Promise<Letter[]> => {
+    const cache = getSyncCache<Letter>(CACHE_LETTERS);
+
+    if (cache && cache.lastSyncTime) {
+      const { data: meta, error: metaError } = await supabase
+        .from('letters')
+        .select('id, updated_at');
+
+      if (metaError) {
+        logger.error('letters.sync.meta', 'Failed to fetch metadata', { error: metaError.message });
+        return cache.data;
+      }
+
+      const currentIds = new Set((meta || []).map((r) => r.id));
+      const maxUpdatedAt = (meta || []).reduce((max, r) => r.updated_at > max ? r.updated_at : max, '');
+      const cachedIds = new Set(cache.data.map((e) => e.id));
+
+      if (maxUpdatedAt <= cache.lastSyncTime && currentIds.size === cachedIds.size && [...currentIds].every((id) => cachedIds.has(id))) {
+        logger.info('letters.sync', 'No changes detected, using cache', { cachedCount: cache.data.length });
+        return cache.data;
+      }
+
+      const { data: delta, error: deltaError } = await supabase
+        .from('letters')
+        .select('*')
+        .gt('updated_at', cache.lastSyncTime);
+
+      if (deltaError) {
+        logger.error('letters.sync.delta', 'Delta fetch failed, falling back to cache', { error: deltaError.message });
+        return cache.data;
+      }
+
+      const deltaMap = new Map((delta || []).map((l) => [l.id, {
+        id: l.id, title: l.title, content: l.content,
+        isOpened: l.is_opened, createdAt: l.created_at,
+      }]));
+
+      let merged = cache.data
+        .filter((l) => currentIds.has(l.id))
+        .map((l) => deltaMap.get(l.id) || l);
+
+      const mergedIds = new Set(merged.map((l) => l.id));
+      for (const letter of deltaMap.values()) {
+        if (!mergedIds.has(letter.id)) merged.push(letter);
+      }
+
+      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      const syncTime = new Date().toISOString();
+      setSyncCache(CACHE_LETTERS, merged, syncTime);
+      logger.info('letters.sync', 'Incremental sync complete', { deltaCount: delta?.length || 0, total: merged.length });
+      return merged;
+    }
+
+    // Full fetch
     const { data, error } = await supabase
       .from('letters')
       .select('*')
@@ -304,7 +373,7 @@ export const storage = {
 
     if (error) {
       logger.error('letters.fetch', 'Failed to fetch letters', { error: error.message, code: error.code });
-      return getCache<Letter[]>(CACHE_LETTERS) || [];
+      return cache?.data || [];
     }
 
     const letters = (data || []).map((letter) => ({
@@ -315,67 +384,9 @@ export const storage = {
       createdAt: letter.created_at,
     }));
 
-    setCache(CACHE_LETTERS, letters);
+    const syncTime = new Date().toISOString();
+    setSyncCache(CACHE_LETTERS, letters, syncTime);
     return letters;
-  },
-
-  getLettersPage: async (page: number, pageSize: number): Promise<{ data: Letter[]; total: number }> => {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    const { count, error: countError } = await supabase
-      .from('letters')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      logger.error('letters.count', 'Failed to count letters', { error: countError.message });
-      const cached = getCache<Letter[]>(CACHE_LETTERS) || [];
-      return { data: cached.slice(from, to + 1), total: cached.length };
-    }
-
-    const { data, error } = await supabase
-      .from('letters')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      logger.error('letters.fetch_page', 'Failed to fetch letters page', { error: error.message, page });
-      const cached = getCache<Letter[]>(CACHE_LETTERS) || [];
-      return { data: cached.slice(from, to + 1), total: cached.length };
-    }
-
-    const letters = (data || []).map((letter) => ({
-      id: letter.id,
-      title: letter.title,
-      content: letter.content,
-      isOpened: letter.is_opened,
-      createdAt: letter.created_at,
-    }));
-
-    return { data: letters, total: count || 0 };
-  },
-
-  setLetters: async (letters: Letter[]): Promise<void> => {
-    // Delete all existing letters
-    await supabase.from('letters').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-    // Insert new letters
-    if (letters.length > 0) {
-      const { error } = await supabase.from('letters').insert(
-        letters.map((letter) => ({
-          id: letter.id,
-          title: letter.title,
-          content: letter.content,
-          is_opened: letter.isOpened,
-          created_at: letter.createdAt,
-        }))
-      );
-
-      if (error) {
-        logger.error('letters.set', 'Failed to save letters', { error: error.message, code: error.code });
-      }
-    }
   },
 
   addLetter: async (letter: Letter): Promise<void> => {
@@ -424,12 +435,63 @@ export const storage = {
     }
   },
 
-  // Flowers - now using Supabase
+  // Flowers - incremental sync
   getCachedFlowers: (): Flower[] | null => {
-    return getCache<Flower[]>(CACHE_FLOWERS);
+    return getCachedData<Flower>(CACHE_FLOWERS);
   },
 
-  getFlowers: async (): Promise<Flower[]> => {
+  syncFlowers: async (): Promise<Flower[]> => {
+    const cache = getSyncCache<Flower>(CACHE_FLOWERS);
+
+    if (cache && cache.lastSyncTime) {
+      const { data: meta, error: metaError } = await supabase
+        .from('flowers')
+        .select('id, updated_at');
+
+      if (metaError) {
+        logger.error('flowers.sync.meta', 'Failed to fetch metadata', { error: metaError.message });
+        return cache.data;
+      }
+
+      const currentIds = new Set((meta || []).map((r) => r.id));
+      const maxUpdatedAt = (meta || []).reduce((max, r) => r.updated_at > max ? r.updated_at : max, '');
+      const cachedIds = new Set(cache.data.map((e) => e.id));
+
+      if (maxUpdatedAt <= cache.lastSyncTime && currentIds.size === cachedIds.size && [...currentIds].every((id) => cachedIds.has(id))) {
+        logger.info('flowers.sync', 'No changes detected, using cache', { cachedCount: cache.data.length });
+        return cache.data;
+      }
+
+      const { data: delta, error: deltaError } = await supabase
+        .from('flowers')
+        .select('*')
+        .gt('updated_at', cache.lastSyncTime);
+
+      if (deltaError) {
+        logger.error('flowers.sync.delta', 'Delta fetch failed, falling back to cache', { error: deltaError.message });
+        return cache.data;
+      }
+
+      const deltaMap = new Map((delta || []).map((f) => [f.id, {
+        id: f.id, message: f.message, isBloomed: f.is_bloomed, type: f.type as Flower['type'],
+      }]));
+
+      let merged = cache.data
+        .filter((f) => currentIds.has(f.id))
+        .map((f) => deltaMap.get(f.id) || f);
+
+      const mergedIds = new Set(merged.map((f) => f.id));
+      for (const flower of deltaMap.values()) {
+        if (!mergedIds.has(flower.id)) merged.push(flower);
+      }
+
+      const syncTime = new Date().toISOString();
+      setSyncCache(CACHE_FLOWERS, merged, syncTime);
+      logger.info('flowers.sync', 'Incremental sync complete', { deltaCount: delta?.length || 0, total: merged.length });
+      return merged;
+    }
+
+    // Full fetch
     const { data, error } = await supabase
       .from('flowers')
       .select('*')
@@ -437,7 +499,7 @@ export const storage = {
 
     if (error) {
       logger.error('flowers.fetch', 'Failed to fetch flowers', { error: error.message, code: error.code });
-      return getCache<Flower[]>(CACHE_FLOWERS) || [];
+      return cache?.data || [];
     }
 
     const flowers = (data || []).map((flower) => ({
@@ -447,29 +509,9 @@ export const storage = {
       type: flower.type as Flower['type'],
     }));
 
-    setCache(CACHE_FLOWERS, flowers);
+    const syncTime = new Date().toISOString();
+    setSyncCache(CACHE_FLOWERS, flowers, syncTime);
     return flowers;
-  },
-
-  setFlowers: async (flowers: Flower[]): Promise<void> => {
-    // Delete all existing flowers
-    await supabase.from('flowers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-    // Insert new flowers
-    if (flowers.length > 0) {
-      const { error } = await supabase.from('flowers').insert(
-        flowers.map((flower) => ({
-          id: flower.id,
-          message: flower.message,
-          is_bloomed: flower.isBloomed,
-          type: flower.type,
-        }))
-      );
-
-      if (error) {
-        logger.error('flowers.set', 'Failed to save flowers', { error: error.message, code: error.code });
-      }
-    }
   },
 
   addFlower: async (flower: Flower): Promise<void> => {

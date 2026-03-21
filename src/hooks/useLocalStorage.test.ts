@@ -4,19 +4,17 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 const { mockStorage, mockLogger } = vi.hoisted(() => {
   const mockStorage = {
     getCachedTimeline: vi.fn(() => null),
-    getTimeline: vi.fn(async () => []),
-    getTimelinePage: vi.fn(async () => ({ data: [], total: 0 })),
+    syncTimeline: vi.fn(async () => []),
     addTimelineEntry: vi.fn(async () => {}),
     updateTimelineEntry: vi.fn(async () => {}),
     deleteTimelineEntry: vi.fn(async () => {}),
     getCachedLetters: vi.fn(() => null),
-    getLetters: vi.fn(async () => []),
-    getLettersPage: vi.fn(async () => ({ data: [], total: 0 })),
+    syncLetters: vi.fn(async () => []),
     addLetter: vi.fn(async () => {}),
     updateLetter: vi.fn(async () => {}),
     deleteLetter: vi.fn(async () => {}),
     getCachedFlowers: vi.fn(() => null),
-    getFlowers: vi.fn(async () => []),
+    syncFlowers: vi.fn(async () => []),
     addFlower: vi.fn(async () => {}),
     updateFlower: vi.fn(async () => {}),
     deleteFlower: vi.fn(async () => {}),
@@ -35,6 +33,7 @@ vi.mock('../utils/logger', () => ({
 
 vi.mock('../components/Toast', () => ({
   showToast: vi.fn(),
+  showSuccessToast: vi.fn(),
 }));
 
 import { useTimeline, useLetters, useFlowers } from './useLocalStorage';
@@ -42,11 +41,11 @@ import { useTimeline, useLetters, useFlowers } from './useLocalStorage';
 beforeEach(() => {
   vi.clearAllMocks();
   mockStorage.getCachedTimeline.mockReturnValue(null);
-  mockStorage.getTimelinePage.mockResolvedValue({ data: [], total: 0 });
+  mockStorage.syncTimeline.mockResolvedValue([]);
   mockStorage.getCachedLetters.mockReturnValue(null);
-  mockStorage.getLettersPage.mockResolvedValue({ data: [], total: 0 });
+  mockStorage.syncLetters.mockResolvedValue([]);
   mockStorage.getCachedFlowers.mockReturnValue(null);
-  mockStorage.getFlowers.mockResolvedValue([]);
+  mockStorage.syncFlowers.mockResolvedValue([]);
 });
 
 // Helper: render hook and flush the initial load
@@ -59,7 +58,7 @@ async function renderAndFlush<T>(hookFn: () => T) {
 describe('useTimeline', () => {
   it('loads entries on mount', async () => {
     const entries = [{ id: '1', date: '2024-01-01', title: 'First', description: '' }];
-    mockStorage.getTimelinePage.mockResolvedValue({ data: entries, total: 1 });
+    mockStorage.syncTimeline.mockResolvedValue(entries);
 
     const { result } = renderHook(() => useTimeline());
 
@@ -81,7 +80,7 @@ describe('useTimeline', () => {
   it('addEntry optimistically adds and sorts by date', async () => {
     const existing = [{ id: '1', date: '2024-06-01', title: 'Later', description: '' }];
     mockStorage.getCachedTimeline.mockReturnValue(existing);
-    mockStorage.getTimelinePage.mockResolvedValue({ data: existing, total: 1 });
+    mockStorage.syncTimeline.mockResolvedValue(existing);
 
     const { result } = await renderAndFlush(() => useTimeline());
 
@@ -98,7 +97,7 @@ describe('useTimeline', () => {
   it('reverts on add failure', async () => {
     const existing = [{ id: '1', date: '2024-01-01', title: 'Existing', description: '' }];
     mockStorage.getCachedTimeline.mockReturnValue(existing);
-    mockStorage.getTimelinePage.mockResolvedValue({ data: existing, total: 1 });
+    mockStorage.syncTimeline.mockResolvedValue(existing);
     mockStorage.addTimelineEntry.mockRejectedValue(new Error('fail'));
 
     const { result } = await renderAndFlush(() => useTimeline());
@@ -116,7 +115,7 @@ describe('useTimeline', () => {
   it('updateEntry optimistically updates', async () => {
     const entries = [{ id: '1', date: '2024-01-01', title: 'Old', description: '' }];
     mockStorage.getCachedTimeline.mockReturnValue(entries);
-    mockStorage.getTimelinePage.mockResolvedValue({ data: entries, total: 1 });
+    mockStorage.syncTimeline.mockResolvedValue(entries);
 
     const { result } = await renderAndFlush(() => useTimeline());
 
@@ -134,7 +133,7 @@ describe('useTimeline', () => {
       { id: '2', date: '2024-02-01', title: 'B', description: '' },
     ];
     mockStorage.getCachedTimeline.mockReturnValue(entries);
-    mockStorage.getTimelinePage.mockResolvedValue({ data: entries, total: 2 });
+    mockStorage.syncTimeline.mockResolvedValue(entries);
 
     const { result } = await renderAndFlush(() => useTimeline());
 
@@ -150,7 +149,7 @@ describe('useTimeline', () => {
 describe('useLetters', () => {
   it('loads letters on mount', async () => {
     const letters = [{ id: '1', title: 'Love', content: 'xo', isOpened: false, createdAt: '2024-01-01' }];
-    mockStorage.getLettersPage.mockResolvedValue({ data: letters, total: 1 });
+    mockStorage.syncLetters.mockResolvedValue(letters);
 
     const { result } = renderHook(() => useLetters());
 
@@ -161,7 +160,7 @@ describe('useLetters', () => {
 
   it('addLetter optimistically prepends', async () => {
     mockStorage.getCachedLetters.mockReturnValue([]);
-    mockStorage.getLettersPage.mockResolvedValue({ data: [], total: 0 });
+    mockStorage.syncLetters.mockResolvedValue([]);
 
     const { result } = await renderAndFlush(() => useLetters());
 
@@ -176,7 +175,7 @@ describe('useLetters', () => {
 
   it('reverts on add failure', async () => {
     mockStorage.getCachedLetters.mockReturnValue([]);
-    mockStorage.getLettersPage.mockResolvedValue({ data: [], total: 0 });
+    mockStorage.syncLetters.mockResolvedValue([]);
     mockStorage.addLetter.mockRejectedValue(new Error('fail'));
 
     const { result } = await renderAndFlush(() => useLetters());
@@ -194,7 +193,7 @@ describe('useLetters', () => {
   it('deleteLetter optimistically removes', async () => {
     const letters = [{ id: '1', title: 'A', content: 'a', isOpened: false, createdAt: '' }];
     mockStorage.getCachedLetters.mockReturnValue(letters);
-    mockStorage.getLettersPage.mockResolvedValue({ data: letters, total: 1 });
+    mockStorage.syncLetters.mockResolvedValue(letters);
 
     const { result } = await renderAndFlush(() => useLetters());
 
@@ -209,7 +208,7 @@ describe('useLetters', () => {
 describe('useFlowers', () => {
   it('loads flowers on mount', async () => {
     const flowers = [{ id: '1', message: 'love', isBloomed: false, type: 'rose' as const }];
-    mockStorage.getFlowers.mockResolvedValue(flowers);
+    mockStorage.syncFlowers.mockResolvedValue(flowers);
 
     const { result } = renderHook(() => useFlowers());
 
@@ -220,7 +219,7 @@ describe('useFlowers', () => {
 
   it('addFlower optimistically appends', async () => {
     mockStorage.getCachedFlowers.mockReturnValue([]);
-    mockStorage.getFlowers.mockResolvedValue([]);
+    mockStorage.syncFlowers.mockResolvedValue([]);
 
     const { result } = await renderAndFlush(() => useFlowers());
 
@@ -235,7 +234,7 @@ describe('useFlowers', () => {
   it('updateFlower optimistically updates', async () => {
     const flowers = [{ id: '1', message: 'love', isBloomed: false, type: 'rose' as const }];
     mockStorage.getCachedFlowers.mockReturnValue(flowers);
-    mockStorage.getFlowers.mockResolvedValue(flowers);
+    mockStorage.syncFlowers.mockResolvedValue(flowers);
 
     const { result } = await renderAndFlush(() => useFlowers());
 
@@ -248,7 +247,7 @@ describe('useFlowers', () => {
 
   it('reverts on add failure', async () => {
     mockStorage.getCachedFlowers.mockReturnValue([]);
-    mockStorage.getFlowers.mockResolvedValue([]);
+    mockStorage.syncFlowers.mockResolvedValue([]);
     mockStorage.addFlower.mockRejectedValue(new Error('fail'));
 
     const { result } = await renderAndFlush(() => useFlowers());
@@ -265,7 +264,7 @@ describe('useFlowers', () => {
   it('deleteFlower optimistically removes', async () => {
     const flowers = [{ id: '1', message: 'love', isBloomed: true, type: 'rose' as const }];
     mockStorage.getCachedFlowers.mockReturnValue(flowers);
-    mockStorage.getFlowers.mockResolvedValue(flowers);
+    mockStorage.syncFlowers.mockResolvedValue(flowers);
 
     const { result } = await renderAndFlush(() => useFlowers());
 

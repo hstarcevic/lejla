@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS timeline_entries (
   title TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   photo TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Create letters table
@@ -14,7 +15,8 @@ CREATE TABLE IF NOT EXISTS letters (
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   is_opened BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Create flowers table
@@ -23,7 +25,8 @@ CREATE TABLE IF NOT EXISTS flowers (
   message TEXT NOT NULL,
   is_bloomed BOOLEAN DEFAULT FALSE,
   type TEXT NOT NULL CHECK (type IN ('rose', 'tulip', 'daisy', 'lily', 'sunflower')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Create app_settings table (for password)
@@ -76,7 +79,31 @@ CREATE POLICY "Public photo update" ON storage.objects
 CREATE POLICY "Public photo delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'photos');
 
+-- Auto-update trigger for updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_updated_at_timeline
+  BEFORE UPDATE ON timeline_entries
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER set_updated_at_letters
+  BEFORE UPDATE ON letters
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER set_updated_at_flowers
+  BEFORE UPDATE ON flowers
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_timeline_entries_date ON timeline_entries(date);
 CREATE INDEX IF NOT EXISTS idx_letters_created_at ON letters(created_at);
 CREATE INDEX IF NOT EXISTS idx_flowers_created_at ON flowers(created_at);
+CREATE INDEX IF NOT EXISTS idx_timeline_entries_updated_at ON timeline_entries(updated_at);
+CREATE INDEX IF NOT EXISTS idx_letters_updated_at ON letters(updated_at);
+CREATE INDEX IF NOT EXISTS idx_flowers_updated_at ON flowers(updated_at);
